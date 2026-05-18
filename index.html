@@ -15,13 +15,14 @@
   import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
   import { getDatabase, ref as dbRef, set as dbSet, get as dbGet, onValue, off } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
- const firebaseConfig = {
+  const firebaseConfig = {
     apiKey: "AIzaSyB6xmptidu5xhJg8nCFl7QL6i1vvICSmvE",
     authDomain: "shabzak-26edc.firebaseapp.com",
+    databaseURL: "https://shabzak-26edc-default-rtdb.firebaseio.com",
     projectId: "shabzak-26edc",
     storageBucket: "shabzak-26edc.firebasestorage.app",
     messagingSenderId: "407887030893",
-    appId: "1:407887030893:web:9a59a4396f3996eef2ed64"
+    appId: "1:407887030893:web:b10501ae993989a6f2ed64"
   };
 
   const app = initializeApp(firebaseConfig);
