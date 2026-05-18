@@ -9,6 +9,109 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+  import { getDatabase, ref as dbRef, set as dbSet, get as dbGet, onValue, off } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+ const firebaseConfig = {
+    apiKey: "AIzaSyB6xmptidu5xhJg8nCFl7QL6i1vvICSmvE",
+    authDomain: "shabzak-26edc.firebaseapp.com",
+    projectId: "shabzak-26edc",
+    storageBucket: "shabzak-26edc.firebasestorage.app",
+    messagingSenderId: "407887030893",
+    appId: "1:407887030893:web:9a59a4396f3996eef2ed64"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  let analytics = null;
+  try { analytics = getAnalytics(app); } catch (e) { console.warn('Analytics unavailable:', e.message); }
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  let dataListener = null;
+  let currentUser = null;
+  let isApplyingRemote = false;
+  let authCallbacks = [];
+  let dataCallbacks = [];
+  let lastError = null;
+  const diagLog = [];
+  function logDiag(msg) {
+    const ts = new Date().toLocaleTimeString('he-IL');
+    diagLog.push('[' + ts + '] ' + msg);
+    if (diagLog.length > 50) diagLog.shift();
+    console.log('[CloudSync]', msg);
+  }
+  logDiag('Firebase app initialized');
+
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    logDiag(user ? 'Auth state: signed in as ' + user.email : 'Auth state: signed out');
+    if (dataListener) { dataListener(); dataListener = null; }
+    if (user) {
+      const userRef = dbRef(db, 'users/' + user.uid);
+      logDiag('Setting up Realtime DB listener for user ' + user.uid);
+      const unsub = onValue(userRef, (snap) => {
+        if (snap.exists()) {
+          const val = snap.val();
+          logDiag('Received cloud data update (' + JSON.stringify(val).length + ' bytes)');
+          isApplyingRemote = true;
+          try { dataCallbacks.forEach(cb => cb(val)); }
+          finally { setTimeout(() => { isApplyingRemote = false; }, 100); }
+        } else {
+          logDiag('Cloud node does not exist yet');
+        }
+      }, (err) => {
+        lastError = 'DB listen error: ' + (err.code || '') + ' - ' + err.message;
+        logDiag('ERROR: ' + lastError);
+        console.error(lastError);
+      });
+      dataListener = () => { off(userRef); };
+    }
+    authCallbacks.forEach(cb => cb(user));
+  });
+
+  window.cloudSync = {
+    isReady: true,
+    async signUp(email, password) { return await createUserWithEmailAndPassword(auth, email, password); },
+    async signIn(email, password) { return await signInWithEmailAndPassword(auth, email, password); },
+    async signOut() { return await signOut(auth); },
+    getUser() { return currentUser; },
+    isSignedIn() { return !!currentUser; },
+    isApplyingRemote() { return isApplyingRemote; },
+    async save(data) {
+      if (!currentUser) { logDiag('Save skipped: not signed in'); return; }
+      const userRef = dbRef(db, 'users/' + currentUser.uid);
+      try {
+        await dbSet(userRef, { ...data, updatedAt: new Date().toISOString() });
+        logDiag('Cloud save success (' + JSON.stringify(data).length + ' bytes)');
+      } catch (e) {
+        lastError = 'Save error: ' + (e.code || '') + ' - ' + e.message;
+        logDiag('ERROR: ' + lastError);
+        throw e;
+      }
+    },
+    async load() {
+      if (!currentUser) return null;
+      const userRef = dbRef(db, 'users/' + currentUser.uid);
+      try {
+        const snap = await dbGet(userRef);
+        logDiag('Cloud load: ' + (snap.exists() ? 'data found' : 'no data'));
+        return snap.exists() ? snap.val() : null;
+      } catch (e) {
+        lastError = 'Load error: ' + (e.code || '') + ' - ' + e.message;
+        logDiag('ERROR: ' + lastError);
+        throw e;
+      }
+    },
+    getDiagLog() { return diagLog.slice(); },
+    getLastError() { return lastError; },
+    onAuth(cb) { authCallbacks.push(cb); if (currentUser !== null || auth.currentUser === null) cb(currentUser); },
+    onData(cb) { dataCallbacks.push(cb); }
+  };
+  window.dispatchEvent(new Event('cloudSyncReady'));
+</script>
 <style>
 :root{--bg:#0f1117;--surface:#181c27;--surface2:#1f2535;--border:#2a3148;--border2:#374060;--text:#e8eaf0;--text2:#8892a4;--text3:#4a5470;--accent:#4f9cf9;--green:#34c77b;--pink:#f06292;--teal:#26c6da;}
 *{margin:0;padding:0;box-sizing:border-box;}
