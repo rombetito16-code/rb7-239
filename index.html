@@ -321,56 +321,47 @@ function getBlockedNames(allAss, targetDayId, targetMission, missionSettings, pl
 }
 
 // === PDF EXPORT ===
-async function exportDisplayToPDF(dayLabel, displaySettings) {
+async function exportDisplayToPDF(dayLabel) {
   const el = document.getElementById('display-export-area');
   if (!el) { alert('פתח את מסך התצוגה תחילה'); return; }
   const prevZoom = el.style.zoom;
-  const prevFontSize = el.style.fontSize;
-  // Reset zoom for export so we get full resolution
+  // Apply print-friendly overrides temporarily
   el.style.zoom = '1';
-  el.style.fontSize = '1em';
   const printStyle = document.createElement('style');
   printStyle.id = '__pdf_print_style';
   printStyle.textContent = `
     #display-export-area { background: #fff !important; }
-    #display-export-area .mcard { background: #f8faff !important; border-color: #dde3f0 !important; box-shadow: 0 1px 4px rgba(0,0,0,0.08) !important; }
-    #display-export-area .mcard-title { color: #0a1535 !important; font-weight: 800 !important; }
+    #display-export-area .mcard { background: #f8faff !important; border-color: #dde3f0 !important; }
+    #display-export-area .mcard-title { color: #0a1535 !important; }
     #display-export-area .mcard-time { color: #4a5470 !important; }
-    #display-export-area .mcard-header { background: #f0f4ff !important; }
-    #display-export-area .mcard-icon { filter: none !important; }
     #display-export-area .slot-label { color: #6b7a99 !important; }
-    #display-export-area .ntag.empty { background: #eef1f8 !important; color: #aaa !important; border: 1px dashed #cdd3e8 !important; }
+    #display-export-area .ntag.empty { background: #eef1f8 !important; color: #999 !important; border-color: #cdd3e8 !important; }
     #display-export-area .display-grid > div:first-child > div { background: linear-gradient(135deg,#1a2540,#0f1a35) !important; }
-    #display-export-area .ntag.filled { border: none !important; }
   `;
   document.head.appendChild(printStyle);
   try {
     await document.fonts.ready;
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise(r => setTimeout(r, 350));
     const canvas = await html2canvas(el, {
-      scale: 3,
+      scale: 2.5,
       backgroundColor: '#ffffff',
       useCORS: true,
       logging: false,
-      windowWidth: el.scrollWidth + 40,
-      windowHeight: el.scrollHeight + 40,
+      windowWidth: el.scrollWidth,
+      windowHeight: el.scrollHeight,
       onclone: (doc) => {
-        const clonedEl = doc.getElementById('display-export-area');
-        clonedEl.style.zoom = '1';
-        clonedEl.style.padding = '16px';
-        clonedEl.style.borderRadius = '0';
+        doc.getElementById('display-export-area').style.zoom = '1';
+        doc.getElementById('display-export-area').style.padding = '12px';
       }
     });
-    const imgData = canvas.toDataURL('image/png', 1.0);
+    const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
-    // Auto-choose orientation based on aspect ratio
-    const isLandscape = canvas.width > canvas.height;
-    const pdf = new jsPDF({ orientation: isLandscape ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' });
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
-    const headerH = 14;
-    const footerH = 10;
-    const margin = 8;
+    const headerH = 12;
+    const footerH = 8;
+    const margin = 6;
     const usableW = pageW - margin*2;
     const usableH = pageH - margin*2 - headerH - footerH;
     const imgRatio = canvas.width / canvas.height;
@@ -381,183 +372,42 @@ async function exportDisplayToPDF(dayLabel, displaySettings) {
     // White background
     pdf.setFillColor(255, 255, 255);
     pdf.rect(0, 0, pageW, pageH, 'F');
-    // Header bar with gradient effect
-    pdf.setFillColor(10, 21, 53);
+    // Header bar
+    pdf.setFillColor(15, 25, 53);
     pdf.rect(0, 0, pageW, headerH + 2, 'F');
-    pdf.setFillColor(15, 30, 70);
-    pdf.rect(0, 0, pageW/2, headerH + 2, 'F');
     pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(12);
+    pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
-    const title = `\u05e9\u05d1\u05e6"\u05e7 \u05e4\u05dc\u05d5\u05d2\u05d4 \u05d0\u02b9 239`;
-    pdf.text(title, pageW - margin, 9, { align: 'right' });
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(160, 200, 255);
-    pdf.text(dayLabel, margin, 9);
-    // Main content image
-    const imgX = (pageW - w) / 2;
-    const imgY = headerH + margin;
-    pdf.addImage(imgData, 'PNG', imgX, imgY, w, h, undefined, 'FAST');
-    // If content overflows, add second page
-    if (h > usableH) {
-      const scaledH = usableH;
-      const scaledW = scaledH * imgRatio;
-      pdf.addPage();
-      pdf.setFillColor(255,255,255);
-      pdf.rect(0,0,pageW,pageH,'F');
-      const overflow = canvas.height - (canvas.height * (usableH / h));
-      const overflowCanvas = document.createElement('canvas');
-      overflowCanvas.width = canvas.width;
-      overflowCanvas.height = overflow;
-      const ctx2 = overflowCanvas.getContext('2d');
-      ctx2.drawImage(canvas, 0, canvas.height - overflow, canvas.width, overflow, 0, 0, canvas.width, overflow);
-      const img2 = overflowCanvas.toDataURL('image/png');
-      const ph2 = (overflow / canvas.width) * scaledW;
-      pdf.addImage(img2, 'PNG', (pageW-scaledW)/2, margin, scaledW, ph2);
-    }
+    const title = `\u05e9\u05d1\u05e6"\u05e7 \u05e4\u05dc\u05d5\u05d2\u05d4 \u05d0\u02b9 239  |  ${dayLabel}`;
+    pdf.text(title, pageW - margin, 8, { align: 'right' });
+    // Main content
+    pdf.addImage(imgData, 'PNG', (pageW-w)/2, headerH + margin + 2, w, h);
     // Footer
-    const lastPage = pdf.internal.pages.length - 1;
-    pdf.setPage(lastPage);
-    pdf.setFillColor(245, 247, 255);
+    pdf.setFillColor(240, 244, 255);
     pdf.rect(0, pageH - footerH - 1, pageW, footerH + 2, 'F');
-    pdf.setDrawColor(200, 210, 235);
-    pdf.setLineWidth(0.3);
-    pdf.line(margin, pageH - footerH - 1, pageW - margin, pageH - footerH - 1);
-    pdf.setTextColor(120, 130, 160);
+    pdf.setTextColor(100, 110, 140);
     pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     const now = new Date();
     const ts = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    pdf.text(`\u05d4\u05d5\u05e4\u05e7: ${ts}`, pageW - margin, pageH - 3, { align: 'right' });
-    pdf.setTextColor(79, 156, 249);
-    pdf.setFont('helvetica', 'bold');
+    pdf.text(`\u05d4\u05d5\u05e4\u05e7 \u05d1\u05ea\u05d0\u05e8\u05d9\u05da: ${ts}`, pageW - margin, pageH - 3, { align: 'right' });
     pdf.text('CONFIDENTIAL', margin, pageH - 3);
-    // Blue border frame on all pages
-    for (let p=1; p<=pdf.internal.pages.length-1; p++) {
-      pdf.setPage(p);
-      pdf.setDrawColor(79, 156, 249);
-      pdf.setLineWidth(0.6);
-      pdf.rect(1, 1, pageW - 2, pageH - 2);
-    }
+    // Border
+    pdf.setDrawColor(79, 156, 249);
+    pdf.setLineWidth(0.5);
+    pdf.rect(1, 1, pageW - 2, pageH - 2);
     pdf.save(`\u05e9\u05d1\u05e6\u05e7_${dayLabel.replace(/[\/\\:]/g,'-')}.pdf`);
   } catch (e) {
     console.error(e);
-    alert('\u05e9\u05d2\u05d9\u05d0\u05d4 \u05d1\u05d9\u05d9\u05e6\u05d5\u05d0 PDF: ' + e.message);
+    alert('שגיאה בייצוא PDF: ' + e.message);
   } finally {
     el.style.zoom = prevZoom;
-    el.style.fontSize = prevFontSize;
     const s = document.getElementById('__pdf_print_style');
     if (s) s.remove();
   }
 }
 
-// === GOOGLE SHEETS IMPORT ===
-// Expected format: CSV/TSV with columns: שם, תאריך_יציאה, תאריך_חזרה
-// OR: First column = name, then date columns with "V" or "1" marking leave days
-function handleGoogleSheetsImport(e, setAftarByDayAndSave, platoons, allMembers) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    try {
-      const text = ev.target.result;
-      const isTSV = file.name.endsWith('.tsv') || text.includes('\t');
-      const sep = isTSV ? '\t' : ',';
-      const lines = text.split(/\r?\n/).filter(l => l.trim());
-      if (lines.length < 2) { alert('הקובץ ריק או לא תקין'); return; }
-      const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g,''));
-      let imported = 0;
-      // Detect format
-      // Format A: שם | תאריך_יציאה | תאריך_חזרה  (each row = one leave period)
-      const nameCol = headers.findIndex(h => h==='שם'||h==='name'||h==='שם מלא'||h==='Name');
-      const startCol = headers.findIndex(h => h.includes('יציאה')||h.includes('start')||h.includes('Start')||h.includes('מתאריך'));
-      const endCol = headers.findIndex(h => h.includes('חזרה')||h.includes('end')||h.includes('End')||h.includes('עד'));
-      const parseDate = (s) => {
-        if (!s) return null;
-        s = s.trim().replace(/^"|"$/g,'');
-        // Try DD/MM/YYYY or DD/MM/YY
-        let m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
-        if (m) {
-          const d = parseInt(m[1]), mo = parseInt(m[2]);
-          let y = parseInt(m[3]);
-          if (y < 100) y += 2000;
-          const now = new Date().getFullYear();
-          if (y < now - 1 || y > now + 2) return null;
-          const pad = n => String(n).padStart(2,'0');
-          return `${y}_${pad(mo)}_${pad(d)}`;
-        }
-        // Try YYYY-MM-DD
-        m = s.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
-        if (m) {
-          const pad = n => String(n).padStart(2,'0');
-          return `${m[1]}_${pad(m[2])}_${pad(m[3])}`;
-        }
-        return null;
-      };
-      const updates = {};
-      if (nameCol >= 0 && startCol >= 0) {
-        // Format A: range-based
-        for (let i=1; i<lines.length; i++) {
-          const cols = lines[i].split(sep).map(c=>c.trim().replace(/^"|"$/g,''));
-          const name = cols[nameCol];
-          if (!name) continue;
-          const startId = parseDate(cols[startCol]);
-          const endId = parseDate(endCol >= 0 ? cols[endCol] : cols[startCol]);
-          if (!startId) continue;
-          const finalEnd = endId || startId;
-          const si = DAY_IDS.indexOf(startId), ei = DAY_IDS.indexOf(finalEnd);
-          if (si < 0) continue;
-          const range = DAY_IDS.slice(si, Math.max(si, ei) + 1);
-          range.forEach(dayId => {
-            if (!updates[dayId]) updates[dayId] = [];
-            if (!updates[dayId].includes(name)) updates[dayId].push(name);
-          });
-          imported++;
-        }
-      } else {
-        // Format B: grid — first col = name, rest = date headers with V/1/✓ as markers
-        const dateCols = [];
-        for (let ci=1; ci<headers.length; ci++) {
-          const parsed = parseDate(headers[ci]);
-          if (parsed) dateCols.push({ ci, dayId: parsed });
-        }
-        if (dateCols.length === 0) {
-          alert('לא זוהו תאריכים בכותרות. ודא שהפורמט הוא DD/MM/YYYY'); return;
-        }
-        for (let i=1; i<lines.length; i++) {
-          const cols = lines[i].split(sep).map(c=>c.trim().replace(/^"|"$/g,''));
-          const name = cols[0];
-          if (!name) continue;
-          dateCols.forEach(({ci, dayId}) => {
-            const val = (cols[ci]||'').toLowerCase();
-            if (val==='v'||val==='1'||val==='✓'||val==='כן'||val==='yes'||val==='x') {
-              if (!updates[dayId]) updates[dayId] = [];
-              if (!updates[dayId].includes(name)) updates[dayId].push(name);
-              imported++;
-            }
-          });
-        }
-      }
-      if (imported === 0) {
-        alert('לא נמצאו נתונים לייבוא. בדוק את פורמט הקובץ:\n• עמודות: שם, תאריך_יציאה, תאריך_חזרה\n• או: שם + עמודות תאריך עם V/1 לסימון');
-        return;
-      }
-      setAftarByDayAndSave(prev => {
-        const c = JSON.parse(JSON.stringify(prev));
-        Object.entries(updates).forEach(([dayId, names]) => {
-          if (!c[dayId]) c[dayId] = [];
-          names.forEach(name => { if (!c[dayId].includes(name)) c[dayId].push(name); });
-        });
-        return c;
-      });
-      const totalDays = Object.keys(updates).length;
-      alert(`✓ יובאו בהצלחה!\n${imported} רשומות → ${totalDays} ימים עם חופשות`);
-    } catch(err) { alert('שגיאה בייבוא: ' + err.message); }
-  };
-  reader.readAsText(file, 'UTF-8');
-  e.target.value = '';
-}
+// === STORAGE (Firebase + localStorage fallback) ===
 const STORAGE_KEY = 'shabzak_data_v2';
 
 function loadFromStorage() {
@@ -790,7 +640,6 @@ function App() {
       if (s.dayMissionOverrides) setDayMissionOverrides(s.dayMissionOverrides);
       if (s.availableRoles) setAvailableRoles(s.availableRoles);
       if (s.customPasswords) setCustomPasswords(s.customPasswords);
-      if (s.memberConstraints) setMemberConstraints(s.memberConstraints);
       if (s.platoons) {
         setPlatoons(prev => {
           const next = JSON.parse(JSON.stringify(prev));
@@ -862,7 +711,7 @@ function App() {
         settings: {
           missionSettings, aftarSettings, spontMissions,
           hiddenMissionsByDay, deletedMissions, dayMissionOverrides,
-          availableRoles, customPasswords, memberConstraints,
+          availableRoles, customPasswords,
           platoons: Object.fromEntries(Object.entries(platoons).map(([k,p])=>[k,p.members])),
         }
       };
@@ -876,7 +725,7 @@ function App() {
       }, 1500);
     }, 400);
     return () => clearTimeout(t);
-  }, [allAss, aftarByDay, missionSettings, aftarSettings, spontMissions, hiddenMissionsByDay, deletedMissions, dayMissionOverrides, platoons, availableRoles, customPasswords, memberConstraints]);
+  }, [allAss, aftarByDay, missionSettings, aftarSettings, spontMissions, hiddenMissionsByDay, deletedMissions, dayMissionOverrides, platoons, availableRoles, customPasswords]);
 
   const setAllAssAndSave = React.useCallback((valOrFn) => {
     setAllAss(prev => typeof valOrFn === 'function' ? valOrFn(prev) : valOrFn);
@@ -913,9 +762,6 @@ function App() {
   const isMissionHiddenOnDay = React.useCallback((dayId, missionId) => (hiddenMissionsByDay[dayId]||[]).includes(missionId), [hiddenMissionsByDay]);
 
   const [bypassConstraints, setBypassConstraints] = useState(false);
-  const [showDisplaySettings, setShowDisplaySettings] = useState(false);
-  const [displaySettings, setDisplaySettings] = useState({ zoom: 80, fontSize: 1.0, showEmpty: true, compactMode: false });
-  const [memberConstraints, setMemberConstraints] = useState({});
   const dayAss = allAss[activeDay] || initDayAssignments();
   const mission = MISSION_DEFS.find(m=>m.id===activeMission);
   const allMissionDefs = React.useMemo(() => MISSION_DEFS.map(m => getEffectiveMission(m, activeDay)),
@@ -1012,36 +858,10 @@ function App() {
     const f = visibleMissions.filter(m => !m.hideFromDisplay);
     const col1=f.filter(m=>m.col===1), col2=f.filter(m=>m.col===2), col3=f.filter(m=>m.col===3), col4=f.filter(m=>m.col===4), col5=f.filter(m=>m.col===5), col6=f.filter(m=>m.col===6);
     const numCols = [col1,col2,col3,col4,col5,col6].filter(c=>c.length>0).length + (aftarThisDay.length>0 ? 1 : 0);
-    const zoomVal = (displaySettings.zoom || 80) / 100;
     return (
       <div className="main">
-        {showDisplaySettings && (
-          <div style={{background:"var(--surface)",border:"1.5px solid var(--accent)",borderRadius:14,padding:"14px 18px",marginBottom:12,display:"flex",gap:18,flexWrap:"wrap",alignItems:"center"}}>
-            <span style={{fontSize:12,fontWeight:700,color:"var(--accent)"}}>🎨 הגדרות תצוגה</span>
-            <label style={{fontSize:11,color:"var(--text2)",display:"flex",alignItems:"center",gap:6}}>
-              זום: <strong style={{color:"var(--text)"}}>{displaySettings.zoom}%</strong>
-              <input type="range" min={40} max={130} value={displaySettings.zoom} onChange={e=>setDisplaySettings(p=>({...p,zoom:+e.target.value}))}
-                style={{width:90,accentColor:"var(--accent)"}}/>
-            </label>
-            <label style={{fontSize:11,color:"var(--text2)",display:"flex",alignItems:"center",gap:6}}>
-              גודל טקסט: <strong style={{color:"var(--text)"}}>{displaySettings.fontSize.toFixed(1)}x</strong>
-              <input type="range" min={0.7} max={1.5} step={0.1} value={displaySettings.fontSize} onChange={e=>setDisplaySettings(p=>({...p,fontSize:+e.target.value}))}
-                style={{width:80,accentColor:"var(--accent)"}}/>
-            </label>
-            <label style={{fontSize:11,color:"var(--text2)",display:"flex",alignItems:"center",gap:6}}>
-              <input type="checkbox" checked={displaySettings.showEmpty} onChange={e=>setDisplaySettings(p=>({...p,showEmpty:e.target.checked}))} style={{accentColor:"var(--accent)"}}/>
-              הצג משבצות ריקות
-            </label>
-            <label style={{fontSize:11,color:"var(--text2)",display:"flex",alignItems:"center",gap:6}}>
-              <input type="checkbox" checked={displaySettings.compactMode} onChange={e=>setDisplaySettings(p=>({...p,compactMode:e.target.checked}))} style={{accentColor:"var(--accent)"}}/>
-              מצב קומפקטי
-            </label>
-            <button onClick={()=>setDisplaySettings({zoom:80,fontSize:1.0,showEmpty:true,compactMode:false})}
-              style={{background:"none",border:"1px solid var(--border2)",borderRadius:6,color:"var(--text3)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:10,padding:"3px 8px"}}>↺ איפוס</button>
-          </div>
-        )}
         <div id="display-export-area" style={{background:"var(--bg)",padding:8,borderRadius:12}}>
-          <div className="display-grid" style={{gridTemplateColumns:`repeat(${numCols||1},1fr)`,zoom:zoomVal,fontSize:`${displaySettings.fontSize}em`}}>
+          <div className="display-grid" style={{gridTemplateColumns:`repeat(${numCols||1},1fr)`,zoom:0.80}}>
             <div style={{gridColumn:"1 / -1",display:"grid",placeItems:"center",marginBottom:4}}>
               <div style={{background:"linear-gradient(135deg,#1a2540,#0f1a35)",border:"2px solid var(--accent)",borderRadius:14,padding:"8px 28px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 0 18px rgba(79,156,249,0.25), 0 2px 8px rgba(0,0,0,0.4)"}}>
                 <span style={{fontSize:18}}>📅</span>
@@ -1078,7 +898,7 @@ function App() {
             )}
             {[col1,col2,col3,col4,col5,col6].map((col,ci)=>col.length>0 && (
               <div key={ci} className="display-col">
-                {col.map(m=><SafeDisplayCard key={m.id} mission={m} assignment={dayAss[m.id]} dayId={activeDay} platoons={platoons} showEmpty={displaySettings.showEmpty} compactMode={displaySettings.compactMode}/>)}
+                {col.map(m=><SafeDisplayCard key={m.id} mission={m} assignment={dayAss[m.id]} dayId={activeDay} platoons={platoons}/>)}
               </div>
             ))}
           </div>
@@ -1244,7 +1064,6 @@ function App() {
                     const allowedNames = effMission?.allowedNames;
                     const isAllowBlk = allowedNames && allowedNames.length>0 && !allowedNames.includes(name);
                     const isRestBlk=blocked.has(name);
-                    const isConstraintBlk = !bypassConstraints && memberConstraints[name] && (memberConstraints[name].blockedMissions||[]).includes(effMission?.id);
                     const AFTAR_EFFECTIVE_START = {"philbox": 14, "hetz4": 14};
                     const missionEffectiveStart = effMission ? (AFTAR_EFFECTIVE_START[effMission.id] ?? effMission.startH) : 0;
                     const isAftarBlk=aftarThisDay.includes(name) && missionEffectiveStart >= aftarSettings.startH;
@@ -1253,13 +1072,13 @@ function App() {
                     const isAftarYesterdayBlk = prevAftar.includes(name) && effMission && effMission.startH < aftarSettings.endH && effMission.id!=="philbox" && effMission.id!=="hetz4";
                     const isGimelBlk=gimelThisDay.has(name) && effMission?.id!=="gimel";
                     const isMaatzar = effMission?.id==="maatzar";
-                    const isBlk=!bypassConstraints&&!isMaatzar&&(isAllowBlk||isRestBlk||isAftarBlk||isAftarYesterdayBlk||isGimelBlk||isConstraintBlk);
+                    const isBlk=!bypassConstraints&&!isMaatzar&&(isAllowBlk||isRestBlk||isAftarBlk||isAftarYesterdayBlk||isGimelBlk);
                     // Role match check for role-slot missions
                     const missionRoles = effMission?.roleSlots && effMission.roleSlots.length > 0 ? effMission.roleSlots.map(rs=>rs.role) : null;
                     const hasRoleMismatch = missionRoles && roles.length > 0 && !missionRoles.some(r => roles.includes(r));
                     let cls="chip";
                     if(isSel) cls+=" selected";
-                    else if(isAllowBlk||isConstraintBlk) cls+=" blocked";
+                    else if(isAllowBlk) cls+=" blocked";
                     else if(isAftarBlk) cls+=" aftar";
                     else if(isAftarYesterdayBlk) cls+=" blocked";
                     else if(isGimelBlk) cls+=" blocked";
@@ -1267,7 +1086,7 @@ function App() {
                     else if(isRestBlk) cls+=" resting";
                     return (
                       <button key={name} className={cls} style={{...getPlatoonStyle(key), ...(hasRoleMismatch && !isBlk ? {outline:"2px solid #e67e22",outlineOffset:"-2px"} : {})}}
-                        title={isBlk?(isAftarBlk?"בבית":isAftarYesterdayBlk?"חזר היום מהבית":isGimelBlk?"בגימל":isConstraintBlk?"חסום ממשימה זו":blockedReasons[name]||"לא מורשה"):""}
+                        title={isBlk?(isAftarBlk?"בבית":isAftarYesterdayBlk?"חזר היום מהבית":isGimelBlk?"בגימל":blockedReasons[name]||"לא מורשה"):""}
                         onClick={()=>{
                           if(isBlk && !bypassConstraints) return;
                           if(isSel) setSelPeople(prev=>prev.filter(p=>p.name!==name));
@@ -1281,8 +1100,7 @@ function App() {
                         {!isSel&&isRestBlk&&<span className="chip-sub">{blockedReasons[name]||"במנוחה"}</span>}
                         {!isSel&&isAftarBlk&&<span className="chip-sub">בבית</span>}
                         {!isSel&&isGimelBlk&&<span className="chip-sub">בגימל</span>}
-                        {!isSel&&isConstraintBlk&&<span className="chip-sub">חסום 🚫</span>}
-                        {!isSel&&!isRestBlk&&!isAftarBlk&&!isGimelBlk&&!isConstraintBlk&&personMissions[name]&&personMissions[name].length>0&&<span className="chip-sub">{personMissions[name].join(" | ")}</span>}
+                        {!isSel&&!isRestBlk&&!isAftarBlk&&!isGimelBlk&&personMissions[name]&&personMissions[name].length>0&&<span className="chip-sub">{personMissions[name].join(" | ")}</span>}
                         {!isSel&&isAss&&!isBlk&&<span className="chip-badge" style={{background:"#26c6da",color:"#000"}}>✓</span>}
                         {!isSel&&!isBlk&&hasRoleMismatch&&<span className="chip-badge" style={{background:"#e67e22",color:"#fff",fontSize:8}}>⚠</span>}
                       </button>
@@ -1599,8 +1417,6 @@ function App() {
           <button style={tabStyle("missions")} onClick={()=>setSettingsTab("missions")}>⚙️ משימות</button>
           <button style={tabStyle("aftar")} onClick={()=>setSettingsTab("aftar")}>🏠 יציאה הביתה</button>
           <button style={tabStyle("roles")} onClick={()=>setSettingsTab("roles")}>🎖️ תפקידים</button>
-          <button style={tabStyle("constraints")} onClick={()=>setSettingsTab("constraints")}>🚫 אילוצים</button>
-          <button style={tabStyle("newmission")} onClick={()=>setSettingsTab("newmission")}>➕ משימה חדשה</button>
           <button style={tabStyle("password")} onClick={()=>setSettingsTab("password")}>🔐 סיסמה</button>
         </div>
         {settingsTab==="missions" && (
@@ -1738,44 +1554,6 @@ function App() {
             </div>
           </div>
         )}
-        {settingsTab==="constraints" && (
-          <div style={{maxWidth:900}}>
-            <div style={{fontSize:16,fontWeight:800,marginBottom:6}}>🚫 אילוצי חיילים למשימות</div>
-            <div style={{fontSize:12,color:"var(--text2)",marginBottom:16,lineHeight:1.6}}>בחר חייל וסמן את המשימות שהוא <strong>לא יכול/לא צריך</strong> לבצע. החייל יחסם אוטומטית ממשימות אלו בבנייה (בלי לעקוף עם 🔓).</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:10}}>
-              {allMembers.map(({name, platoon}) => {
-                const blocked = (memberConstraints[name]?.blockedMissions) || [];
-                const hasConstraints = blocked.length > 0;
-                return (
-                  <div key={name} style={{background:"var(--surface)",border:`1.5px solid ${hasConstraints?"#ef535044":"var(--border)"}`,borderRadius:12,padding:"12px 14px"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                      <div style={{...getPlatoonStyle(platoon),borderRadius:6,padding:"3px 10px",fontSize:12,fontWeight:700}}>{name}</div>
-                      {hasConstraints && <span style={{fontSize:10,color:"#ef5350",fontWeight:700}}>🚫 {blocked.length} חסומות</span>}
-                      {hasConstraints && <button onClick={()=>setMemberConstraints(p=>{const c={...p};delete c[name];return c;})} style={{background:"none",border:"none",color:"var(--text3)",cursor:"pointer",fontSize:10,padding:0,marginRight:"auto"}}>נקה הכל</button>}
-                    </div>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                      {visibleForSettings.map(m => {
-                        const ms = missionSettings[m.id]||{};
-                        const isBlocked = blocked.includes(m.id);
-                        return (
-                          <button key={m.id} onClick={()=>setMemberConstraints(p=>{
-                            const cur = (p[name]?.blockedMissions)||[];
-                            const next = isBlocked ? cur.filter(x=>x!==m.id) : [...cur, m.id];
-                            return {...p, [name]:{...p[name], blockedMissions:next}};
-                          })} style={{background:isBlocked?"#ef535022":"var(--surface2)",border:`1px solid ${isBlocked?"#ef5350":"var(--border2)"}`,borderRadius:6,color:isBlocked?"#ef5350":"var(--text3)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:10,padding:"2px 7px",fontWeight:isBlocked?700:400}}>
-                            {ms.icon||m.icon} {ms.label||m.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-              {allMembers.length === 0 && <div style={{fontSize:12,color:"var(--text3)"}}>אין חיילים. הוסף דרך מסך "חיילים"</div>}
-            </div>
-          </div>
-        )}
-        {settingsTab==="newmission" && <NewMissionTab inp={inp} btn={btn} availableRoles={availableRoles} setMissionSettings={setMissionSettings} setAllAssAndSave={setAllAssAndSave}/>}
       </div>
     );
   }
@@ -2023,17 +1801,10 @@ function App() {
             {bypassConstraints?"🔓":"🔒"}
           </button>
         </div>
-        {view==="display" && <>
-          <button onClick={()=>exportDisplayToPDF(`${activeDayObj?.label}_${activeDayObj?.date}`, displaySettings)} style={{background:"#ef535022",border:"1px solid #ef5350",borderRadius:7,color:"#ef5350",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"4px 12px"}}>📄 ייצוא PDF</button>
-          <button onClick={()=>setShowDisplaySettings(p=>!p)} style={{background:showDisplaySettings?"var(--accent)22":"none",border:`1px solid ${showDisplaySettings?"var(--accent)":"var(--border2)"}`,borderRadius:7,color:showDisplaySettings?"var(--accent)":"var(--text2)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,padding:"4px 10px"}}>🎨 עיצוב</button>
-        </>}
-        <label style={{background:"none",border:"1px solid #26c6da44",borderRadius:7,color:"var(--teal)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,padding:"4px 10px",whiteSpace:"nowrap"}}>
-          📊 ייבוא Sheets
-          <input type="file" accept=".csv,.tsv,.txt" style={{display:"none"}} onChange={(e)=>handleGoogleSheetsImport(e, setAftarByDayAndSave, platoons, allMembers)}/>
-        </label>
+        {view==="display" && <button onClick={()=>exportDisplayToPDF(`${activeDayObj?.label}_${activeDayObj?.date}`)} style={{background:"#ef535022",border:"1px solid #ef5350",borderRadius:7,color:"#ef5350",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"4px 12px"}}>📄 ייצוא PDF</button>}
         <button onClick={()=>{ if(confirm("למחוק את כל השיבוצים?")){ setAllAssAndSave(freshAss()); setAftarByDayAndSave(freshAftar()); }}} style={{background:"none",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text3)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,padding:"4px 10px"}}>🗑 איפוס</button>
         <button onClick={()=>{
-          const data = JSON.stringify({ass:allAss, aftar:aftarByDay, settings:{missionSettings,aftarSettings,spontMissions,hiddenMissionsByDay,deletedMissions,dayMissionOverrides,availableRoles,customPasswords,memberConstraints,platoons:Object.fromEntries(Object.entries(platoons).map(([k,p])=>[k,p.members]))}}, null, 2);
+          const data = JSON.stringify({ass:allAss, aftar:aftarByDay, settings:{missionSettings,aftarSettings,spontMissions,hiddenMissionsByDay,deletedMissions,dayMissionOverrides,availableRoles,customPasswords,platoons:Object.fromEntries(Object.entries(platoons).map(([k,p])=>[k,p.members]))}}, null, 2);
           const blob = new Blob([data], {type:"application/json"});
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
@@ -2060,14 +1831,7 @@ function App() {
                   if (s.dayMissionOverrides) setDayMissionOverrides(s.dayMissionOverrides);
                   if (s.availableRoles) setAvailableRoles(s.availableRoles);
                   if (s.customPasswords) setCustomPasswords(s.customPasswords);
-                  if (s.memberConstraints) setMemberConstraints(s.memberConstraints);
                   if (s.platoons) {
-                    setPlatoons(prev => {
-                      const next = JSON.parse(JSON.stringify(prev));
-                      Object.entries(s.platoons).forEach(([k,members]) => { if (next[k]) next[k].members = members.map(normalizeMember); });
-                      return next;
-                    });
-                  }
                     setPlatoons(prev => {
                       const next = JSON.parse(JSON.stringify(prev));
                       Object.entries(s.platoons).forEach(([k,members]) => { if (next[k]) next[k].members = members.map(normalizeMember); });
@@ -2157,76 +1921,6 @@ function MemberEditor({ name, roles, platoonKey, idx, platoons, availableRoles, 
       <div style={{display:"flex",gap:5}}>
         <button onClick={save} style={btn({background:"var(--green)",color:"#fff",flex:1,fontWeight:700,fontSize:11})}>✓ שמור</button>
         <button onClick={onDone} style={btn({flex:1,fontSize:11})}>ביטול</button>
-      </div>
-    </div>
-  );
-}
-
-function NewMissionTab({ inp: inpStyle, btn: btnFn, availableRoles, setMissionSettings, setAllAssAndSave }) {
-  const [nm, setNm] = React.useState({ label:'', icon:'⭐', time:'', startH:8, endH:16, col:4, slots_commander:0, slots_soldiers:2, restHours:0, roleSlots:[] });
-  const inp2 = inpStyle || {display:"block",width:"100%",marginTop:3,padding:"5px 8px",borderRadius:7,border:"1px solid var(--border2)",background:"var(--surface2)",color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:13};
-  const btn2 = btnFn || ((extra={}) => ({background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text2)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:12,padding:"4px 10px",...extra}));
-  const addMission = () => {
-    if (!nm.label.trim()) { alert('נדרש שם למשימה'); return; }
-    const id = 'custom_' + Date.now();
-    const newM = { id, label:nm.label, icon:nm.icon, slots:{commander:nm.slots_commander,soldiers:nm.slots_soldiers}, time:nm.time, border:"#7b68ee", col:nm.col, startH:nm.startH, endH:nm.endH, roleSlots:nm.roleSlots };
-    MISSION_DEFS.push(newM);
-    setMissionSettings(prev => ({...prev, [id]:{ label:nm.label, icon:nm.icon, time:nm.time, startH:nm.startH, endH:nm.endH, restHours:nm.restHours, slots_commander:nm.slots_commander, slots_soldiers:nm.slots_soldiers, roleSlots:nm.roleSlots, allowedNames:[] }}));
-    setAllAssAndSave(prev => {
-      const c = JSON.parse(JSON.stringify(prev));
-      DAY_IDS.forEach(dayId => {
-        if (!c[dayId]) c[dayId] = {};
-        c[dayId][id] = { commanders: Array(nm.slots_commander).fill(null), soldiers: Array(nm.slots_soldiers).fill(null) };
-      });
-      return c;
-    });
-    alert(`✓ משימה "${nm.label}" נוספה בהצלחה!`);
-    setNm({ label:'', icon:'⭐', time:'', startH:8, endH:16, col:4, slots_commander:0, slots_soldiers:2, restHours:0, roleSlots:[] });
-  };
-  return (
-    <div style={{maxWidth:620}}>
-      <div style={{fontSize:16,fontWeight:800,marginBottom:6}}>➕ הוספת משימה חדשה</div>
-      <div style={{fontSize:12,color:"var(--text2)",marginBottom:16}}>צור משימה חדשה לגמרי שתופיע בכל הימים. ניתן לערוך ולמחוק אחר כך מלשונית "משימות".</div>
-      <div style={{background:"var(--surface)",border:"1.5px solid #7b68ee44",borderRadius:14,padding:"18px"}}>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8,marginBottom:12}}>
-          <label style={{fontSize:11,color:"var(--text2)"}}>שם המשימה *<input style={inp2} value={nm.label} onChange={e=>setNm(p=>({...p,label:e.target.value}))} placeholder="לדוג׳: תורנות לילה"/></label>
-          <label style={{fontSize:11,color:"var(--text2)"}}>אייקון<input style={inp2} value={nm.icon} onChange={e=>setNm(p=>({...p,icon:e.target.value}))}/></label>
-          <label style={{fontSize:11,color:"var(--text2)"}}>שעות תצוגה<input style={inp2} value={nm.time} onChange={e=>setNm(p=>({...p,time:e.target.value}))} placeholder="08:00 - 16:00"/></label>
-          <label style={{fontSize:11,color:"var(--text2)"}}>שעת התחלה<input type="number" min={0} max={30} style={inp2} value={nm.startH} onChange={e=>setNm(p=>({...p,startH:+e.target.value}))}/></label>
-          <label style={{fontSize:11,color:"var(--text2)"}}>שעת סיום<input type="number" min={0} max={30} style={inp2} value={nm.endH} onChange={e=>setNm(p=>({...p,endH:+e.target.value}))}/></label>
-          <label style={{fontSize:11,color:"var(--text2)"}}>מנוחה (שעות)<input type="number" min={0} max={24} style={inp2} value={nm.restHours} onChange={e=>setNm(p=>({...p,restHours:+e.target.value}))}/></label>
-          <label style={{fontSize:11,color:"var(--text2)"}}>מפקדים<input type="number" min={0} max={10} style={inp2} value={nm.slots_commander} onChange={e=>setNm(p=>({...p,slots_commander:+e.target.value}))}/></label>
-          <label style={{fontSize:11,color:"var(--text2)"}}>חיילים<input type="number" min={0} max={20} style={inp2} value={nm.slots_soldiers} onChange={e=>setNm(p=>({...p,slots_soldiers:+e.target.value}))}/></label>
-          <label style={{fontSize:11,color:"var(--text2)"}}>עמודה בתצוגה (1-6)
-            <select style={inp2} value={nm.col} onChange={e=>setNm(p=>({...p,col:+e.target.value}))}>
-              {[1,2,3,4,5,6].map(c=><option key={c} value={c}>עמודה {c}</option>)}
-            </select>
-          </label>
-        </div>
-        <div style={{borderTop:"1px solid var(--border)",paddingTop:10,marginBottom:12}}>
-          <div style={{fontSize:12,fontWeight:700,marginBottom:6,color:"var(--accent)"}}>🎖️ תפקידים נדרשים (אופציונלי)</div>
-          <div style={{display:"flex",flexDirection:"column",gap:5}}>
-            {(nm.roleSlots||[]).map((rs,i)=>(
-              <div key={i} style={{display:"flex",gap:5,alignItems:"center"}}>
-                <select style={{...inp2,marginTop:0,flex:2}} value={rs.role} onChange={e=>setNm(p=>{const nrs=[...p.roleSlots];nrs[i]={...nrs[i],role:e.target.value};return {...p,roleSlots:nrs};})}>
-                  {availableRoles.map(r=><option key={r} value={r}>{r}</option>)}
-                </select>
-                <input type="number" min={1} max={20} style={{...inp2,marginTop:0,flex:1}} value={rs.count} onChange={e=>setNm(p=>{const nrs=[...p.roleSlots];nrs[i]={...nrs[i],count:+e.target.value};return {...p,roleSlots:nrs};})}/>
-                <button onClick={()=>setNm(p=>({...p,roleSlots:p.roleSlots.filter((_,j)=>j!==i)}))} style={btn2({color:"#ef5350",padding:"4px 8px"})}>✕</button>
-              </div>
-            ))}
-            <button onClick={()=>setNm(p=>({...p,roleSlots:[...(p.roleSlots||[]),{role:availableRoles[0]||"לוחם",count:1}]}))} style={btn2({background:"var(--accent)22",color:"var(--accent)",fontWeight:700})}>+ הוסף תפקיד</button>
-          </div>
-        </div>
-        <div style={{background:"var(--surface2)",borderRadius:9,padding:"10px 12px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:18}}>{nm.icon}</span>
-          <div>
-            <div style={{fontWeight:700,fontSize:13}}>{nm.label||"שם המשימה"}</div>
-            {nm.time && <div style={{fontSize:11,color:"var(--text2)"}}>{nm.time}</div>}
-            <div style={{fontSize:10,color:"var(--text3)"}}>⭐{nm.slots_commander} 🪖{nm.slots_soldiers} | {nm.startH}:00–{nm.endH}:00 | עמודה {nm.col}</div>
-          </div>
-        </div>
-        <button onClick={addMission} style={btn2({background:"var(--accent)",color:"#fff",fontWeight:800,fontSize:13,padding:"8px 24px",width:"100%"})}>✓ הוסף משימה</button>
       </div>
     </div>
   );
