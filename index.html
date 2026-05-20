@@ -263,6 +263,10 @@ function normalizeMember(m) {
   };
 }
 function getMemberName(m) { return typeof m === 'string' ? m : (m && m.name) || ''; }
+// Sort soldiers by Hebrew alphabet (א-ת)
+function sortMembersByName(arr) {
+  return [...arr].sort((a,b) => getMemberName(a).localeCompare(getMemberName(b), 'he'));
+}
 function getMemberRoles(m) {
   if (typeof m === 'string') return [];
   return Array.isArray(m && m.roles) ? m.roles : [];
@@ -1197,7 +1201,7 @@ function App() {
                   {p.label}
                 </div>
                 <div className="pool-chips">
-                  {p.members.map(rawMember=>{
+                  {sortMembersByName(p.members).map(rawMember=>{
                     const name = getMemberName(rawMember);
                     const roles = getMemberRoles(rawMember);
                     const memberBlocked = getMemberBlocked(rawMember);
@@ -1281,11 +1285,15 @@ function App() {
     const [endD, setEndD] = React.useState(null);
     const [filterRole, setFilterRole] = React.useState("הכל");
     const [manageDay, setManageDay] = React.useState(null); // dayId for inline manage
+    const [pplPicker, setPplPicker] = React.useState(null); // {startD, endD} for popup picker
 
     const monthGroups = React.useMemo(() => {
       const groups = {};
       DAYS.forEach(d => {
         const [y,m] = d.id.split('_');
+        const mNum = parseInt(m);
+        // Only show months 4-8 (April-August)
+        if (mNum < 4 || mNum > 8) return;
         const key = `${y}_${m}`;
         if (!groups[key]) groups[key] = [];
         groups[key].push(d);
@@ -1371,7 +1379,7 @@ function App() {
       <div className="main" style={{maxWidth:1200,margin:"0 auto",padding:"20px 16px"}}>
         <div style={{fontSize:20,fontWeight:800,marginBottom:8}}>🏠 לוח יציאות הביתה</div>
         <div style={{fontSize:13,color:"var(--text2)",marginBottom:18,lineHeight:1.6}}>
-          <strong>איך זה עובד:</strong> 1) בחר חיילים מהרשימה למטה → 2) לחץ על תאריך יציאה בלוח → 3) לחץ על תאריך חזרה לסמן טווח → 4) לחץ "הוסף יציאה"
+          <strong>איך זה עובד:</strong> 1) לחץ על תאריך יציאה → 2) לחץ על תאריך חזרה לסמן טווח → 3) לחץ "בחר חיילים לטווח" → 4) בחר חיילים מתוך החלון
         </div>
 
         {/* Sticky action panel */}
@@ -1394,7 +1402,11 @@ function App() {
             {endD && <><span style={{fontSize:14,color:"var(--text2)"}}>→</span><span style={{background:"var(--accent)",color:"#fff",borderRadius:6,padding:"3px 12px",fontSize:12,fontWeight:700}}>📥 {DAYS.find(d=>d.id===endD)?.date}</span></>}
             {!startD && <span style={{fontSize:12,color:"var(--text3)"}}>לחץ על תאריך בלוח השנה</span>}
             <button onClick={()=>{setStartD(null);setEndD(null);}} style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:6,color:"var(--text2)",padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:"Heebo,sans-serif"}}>נקה טווח</button>
-            <button onClick={applyLeave} style={{background:"var(--green)",border:"none",borderRadius:6,color:"#fff",padding:"6px 18px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"Heebo,sans-serif",marginRight:"auto"}}>✓ הוסף יציאה</button>
+            <button onClick={()=>{
+              if(!startD){alert('בחר תאריך בלוח השנה תחילה');return;}
+              setPplPicker({startD, endD: endD || startD});
+            }} style={{background:"var(--accent)",border:"none",borderRadius:6,color:"#fff",padding:"6px 18px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"Heebo,sans-serif",marginRight:"auto"}}>👥 בחר חיילים לטווח</button>
+            <button onClick={applyLeave} style={{background:"var(--green)",border:"none",borderRadius:6,color:"#fff",padding:"6px 18px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"Heebo,sans-serif"}}>✓ הוסף נבחרים</button>
             <button onClick={clearLeave} style={{background:"#ef535033",border:"1px solid #ef5350",borderRadius:6,color:"#ef5350",padding:"6px 18px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"Heebo,sans-serif"}}>🗑 הסר מהטווח</button>
           </div>
           <div style={{fontSize:11,color:"var(--text2)",marginTop:8,paddingTop:8,borderTop:"1px solid var(--border)",display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
@@ -1475,7 +1487,7 @@ function App() {
           </div>
           {allMembers.length === 0 ? <div style={{color:"var(--text3)",fontSize:12}}>אין חיילים. הוסף דרך מסך "חיילים"</div> :
             Object.entries(platoons).map(([key,p])=>{
-              const members = p.members.filter(rawM => filterRole==="הכל" || getMemberRoles(rawM).includes(filterRole));
+              const members = sortMembersByName(p.members.filter(rawM => filterRole==="הכל" || getMemberRoles(rawM).includes(filterRole)));
               if(members.length===0) return null;
               return (
                 <div key={key} style={{marginBottom:14}}>
@@ -1503,6 +1515,72 @@ function App() {
             })
           }
         </div>
+        {/* People picker modal (open after selecting date range) */}
+        {pplPicker && (() => {
+          const range = (() => {
+            const s = pplPicker.startD, e = pplPicker.endD;
+            const si = DAY_IDS.indexOf(s), ei = DAY_IDS.indexOf(e);
+            return DAY_IDS.slice(Math.min(si,ei), Math.max(si,ei)+1);
+          })();
+          const rangeLabel = pplPicker.startD === pplPicker.endD
+            ? DAYS.find(d=>d.id===pplPicker.startD)?.date
+            : `${DAYS.find(d=>d.id===pplPicker.startD)?.date} → ${DAYS.find(d=>d.id===pplPicker.endD)?.date}`;
+          const togglePplPick = (name) => {
+            setSelPpl(prev => prev.includes(name) ? prev.filter(n=>n!==name) : [...prev, name]);
+          };
+          const applyAndClose = () => {
+            if (selPpl.length === 0) { alert('בחר חיילים'); return; }
+            setAftarByDayAndSave(prev => {
+              const c = JSON.parse(JSON.stringify(prev));
+              range.forEach(dayId => {
+                if (!c[dayId]) c[dayId] = [];
+                selPpl.forEach(name => { if (!c[dayId].includes(name)) c[dayId].push(name); });
+              });
+              return c;
+            });
+            const added = selPpl.length;
+            setSelPpl([]); setStartD(null); setEndD(null); setPplPicker(null);
+            alert(`✓ נוספו ${added} חיילים ל-${range.length} ימים`);
+          };
+          return (
+            <div onClick={()=>setPplPicker(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+              <div onClick={e=>e.stopPropagation()} style={{background:"var(--surface)",border:"2px solid var(--accent)",borderRadius:16,padding:20,maxWidth:900,width:"100%",maxHeight:"90vh",overflow:"auto",boxShadow:"0 0 40px rgba(79,156,249,0.3)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,borderBottom:"1px solid var(--border)",paddingBottom:10}}>
+                  <span style={{fontSize:26}}>🏠</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:18,fontWeight:800}}>בחירת חיילים ליציאה הביתה</div>
+                    <div style={{fontSize:12,color:"var(--text2)"}}>📅 {rangeLabel} · {range.length} ימים</div>
+                  </div>
+                  <div style={{fontSize:13,fontWeight:700,color:"var(--accent)"}}>נבחרו: {selPpl.length}</div>
+                  <button onClick={()=>setPplPicker(null)} style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text2)",cursor:"pointer",padding:"6px 14px",fontFamily:"Heebo,sans-serif",fontSize:13}}>✕ סגור</button>
+                  <button onClick={applyAndClose} style={{background:"var(--green)",border:"none",borderRadius:7,color:"#fff",cursor:"pointer",padding:"6px 18px",fontFamily:"Heebo,sans-serif",fontSize:14,fontWeight:800}}>✓ הוסף ({selPpl.length})</button>
+                </div>
+                {Object.entries(platoons).map(([k,pp])=>pp.members.length===0?null:(
+                  <div key={k} style={{marginBottom:12}}>
+                    <div style={{fontSize:13,fontWeight:700,color:pp.color,marginBottom:6,padding:"4px 10px",background:pp.color+"22",borderRadius:6,display:"inline-block"}}>
+                      {pp.label} ({pp.members.length})
+                    </div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                      {sortMembersByName(pp.members).map(rawM=>{
+                        const name = getMemberName(rawM);
+                        const isSel = selPpl.includes(name);
+                        const alreadyInRange = range.some(d => (aftarByDay[d]||[]).includes(name));
+                        return (
+                          <button key={name} onClick={()=>togglePplPick(name)}
+                            style={{...getPlatoonStyle(k),border:isSel?"3px solid #fff":"2px solid transparent",borderRadius:8,padding:"6px 12px",fontFamily:"Heebo,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",position:"relative",opacity:isSel?1:(alreadyInRange?0.6:0.9),boxShadow:isSel?"0 0 8px rgba(255,255,255,0.5)":"none"}}>
+                            {name}
+                            {isSel && <span style={{position:"absolute",top:-6,right:-6,background:"#fff",color:"#111",borderRadius:"50%",width:16,height:16,fontSize:10,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>✓</span>}
+                            {alreadyInRange && !isSel && <div style={{fontSize:9,opacity:0.8,marginTop:2}}>חלקית בטווח</div>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   }
@@ -1676,8 +1754,50 @@ function App() {
                       <span style={{fontSize:15}}>{s.icon||m.icon}</span>
                       <span style={{fontWeight:700,fontSize:13,flex:1}}>{s.label||m.label}</span>
                       {!isEditing && <span style={{fontSize:11,color:"var(--text3)"}}>🕐 {s.startH}:00–{s.endH>24?(s.endH-24)+":00+":s.endH+":00"} | 😴 {s.restHours}ש׳ | ⭐{s.slots_commander} 🪖{s.slots_soldiers}{s.roleSlots && s.roleSlots.length>0?" 🎖️":""}</span>}
-                      {!isEditing && <button onClick={()=>startEdit(m)} style={btn()}>✏️</button>}
-                      {!isEditing && <button onClick={()=>{if(confirm(`למחוק את "${m.label}"?`)) setDeletedMissions(p=>[...p,m.id]);}} style={btn({color:"#ef5350"})}>🗑</button>}
+                      {!isEditing && <button onClick={()=>startEdit(m)} style={btn()} title="ערוך משימה">✏️</button>}
+                      {!isEditing && <button onClick={()=>{
+                        const baseSettings = missionSettings[m.id] || {};
+                        const id = "custom_" + Date.now();
+                        const dupLabel = (baseSettings.label || m.label) + " (העתק)";
+                        const newM = {
+                          id,
+                          label: dupLabel,
+                          icon: baseSettings.icon || m.icon || "🎯",
+                          time: baseSettings.time || m.time || "",
+                          slots: { commander: baseSettings.slots_commander ?? m.slots.commander, soldiers: baseSettings.slots_soldiers ?? m.slots.soldiers },
+                          border: m.border || "#7e57c2",
+                          col: baseSettings.col || m.col || 1,
+                          startH: baseSettings.startH ?? m.startH,
+                          endH: baseSettings.endH ?? m.endH,
+                          roleSlots: JSON.parse(JSON.stringify(baseSettings.roleSlots || m.roleSlots || [])),
+                          allowedNames: [],
+                        };
+                        setCustomMissions(prev => [...prev, newM]);
+                        setMissionSettings(prev => ({...prev, [id]: {
+                          label: dupLabel, icon: newM.icon, time: newM.time,
+                          startH: newM.startH, endH: newM.endH,
+                          restHours: baseSettings.restHours || 0,
+                          slots_commander: newM.slots.commander,
+                          slots_soldiers: newM.slots.soldiers,
+                          col: newM.col,
+                          roleSlots: newM.roleSlots,
+                          allowedNames: [],
+                        }}));
+                        setAllAssAndSave(prev => {
+                          const c = JSON.parse(JSON.stringify(prev));
+                          DAY_IDS.forEach(dayId => {
+                            if (!c[dayId]) c[dayId] = {};
+                            const totalSol = newM.roleSlots && newM.roleSlots.length>0 ? newM.roleSlots.reduce((s,r)=>s+(r.count||0),0) : newM.slots.soldiers;
+                            c[dayId][id] = {
+                              commanders: Array(newM.slots.commander).fill(null),
+                              soldiers: Array(totalSol).fill(null),
+                            };
+                          });
+                          return c;
+                        });
+                        alert(`✓ המשימה שוכפלה: ${dupLabel}`);
+                      }} style={btn({color:"var(--accent)"})} title="שכפל משימה">📋</button>}
+                      {!isEditing && <button onClick={()=>{if(confirm(`למחוק את "${m.label}"?`)) setDeletedMissions(p=>[...p,m.id]);}} style={btn({color:"#ef5350"})} title="מחק משימה">🗑</button>}
                     </div>
                     {!isEditing && (
                       <div style={{padding:"4px 14px 10px",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
@@ -1782,7 +1902,47 @@ function App() {
                           {membersWithRole.length>6 && <span style={{fontSize:10,color:"var(--text3)"}}>+{membersWithRole.length-6}</span>}
                         </div>
                       )}
-                      <button onClick={()=>{if(confirm(`למחוק את התפקיד "${r}"?`)) setAvailableRoles(p=>p.filter((_,j)=>j!==i));}} style={{background:"none",border:"none",color:"#ef5350",cursor:"pointer",fontSize:12,padding:0}}>✕</button>
+                      <button onClick={()=>{
+                        const newR = prompt(`שנה שם התפקיד "${r}":`, r);
+                        if (!newR || !newR.trim() || newR.trim() === r) return;
+                        const newName = newR.trim();
+                        if (availableRoles.includes(newName)) { alert("תפקיד זה כבר קיים"); return; }
+                        // Update role name in availableRoles + all members' roles + mission roleSlots
+                        setAvailableRoles(p => p.map(x => x === r ? newName : x));
+                        setPlatoons(prev => {
+                          const n = JSON.parse(JSON.stringify(prev));
+                          Object.values(n).forEach(pl => {
+                            pl.members = pl.members.map(m => {
+                              const norm = normalizeMember(m);
+                              norm.roles = norm.roles.map(x => x === r ? newName : x);
+                              return norm;
+                            });
+                          });
+                          return n;
+                        });
+                        setMissionSettings(prev => {
+                          const c = JSON.parse(JSON.stringify(prev));
+                          Object.values(c).forEach(ms => {
+                            if (ms.roleSlots) ms.roleSlots = ms.roleSlots.map(rs => rs.role === r ? {...rs, role: newName} : rs);
+                          });
+                          return c;
+                        });
+                      }} style={{background:"none",border:"none",color:"var(--accent)",cursor:"pointer",fontSize:14,padding:0}} title="שנה שם">✏️</button>
+                      <button onClick={()=>{if(confirm(`למחוק את התפקיד "${r}"?\nהתפקיד יוסר גם מכל החיילים והמשימות.`)){
+                        setAvailableRoles(p=>p.filter((_,j)=>j!==i));
+                        // Cascade: remove role from members and mission roleSlots
+                        setPlatoons(prev => {
+                          const n = JSON.parse(JSON.stringify(prev));
+                          Object.values(n).forEach(pl => {
+                            pl.members = pl.members.map(m => {
+                              const norm = normalizeMember(m);
+                              norm.roles = norm.roles.filter(x => x !== r);
+                              return norm;
+                            });
+                          });
+                          return n;
+                        });
+                      }}} style={{background:"none",border:"none",color:"#ef5350",cursor:"pointer",fontSize:14,padding:0}} title="מחק">🗑</button>
                     </div>
                   );
                 })}
@@ -2018,10 +2178,19 @@ function App() {
           );
         })()}
         {(() => {
-          // Include custom missions too. Exclude command roles (כל קצין/מפ/סמפ/חפק)
+          // Include custom missions too. Exclude only specific command roles by ID/exact label
           const EXCLUDE_TRACK = new Set(["maatzar","gimel","katzin","katzin_a","katzin_b","matbah_boker","matbah_tzaharayim","map","smp","hfk"]);
+          const EXACT_EXCLUDE_LABELS = new Set(["מפ","סמפ","חפק","מ\"פ","סמ\"פ"]);
           const allTrackable = [...MISSION_DEFS, ...customMissions];
-          const trackMissions = allTrackable.filter(m => !m.hideFromDisplay && !EXCLUDE_TRACK.has(m.id) && !deletedMissions.includes(m.id) && !((missionSettings[m.id]?.label||m.label||'').match(/^(מפ|סמפ|חפק|קצין)/)));
+          const trackMissions = allTrackable.filter(m => {
+            if (m.hideFromDisplay) return false;
+            if (EXCLUDE_TRACK.has(m.id)) return false;
+            if (deletedMissions.includes(m.id)) return false;
+            const label = (missionSettings[m.id]?.label || m.label || '').trim();
+            if (EXACT_EXCLUDE_LABELS.has(label)) return false;
+            if (label.startsWith('קצין מוצב')) return false;
+            return true;
+          });
           return (
             <div style={{background:"var(--surface)",border:"1.5px solid var(--border)",borderRadius:14,marginBottom:20,overflow:"hidden"}}>
               <div style={{padding:"10px 14px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",gap:8}}>
@@ -2140,7 +2309,7 @@ function App() {
               <div style={{fontWeight:700,fontSize:13,color:p.color,marginBottom:8}}>{p.label} ({p.members.length})</div>
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {p.members.length === 0 && <div style={{fontSize:11,color:"var(--text3)"}}>אין חיילים</div>}
-                {p.members.map((rawM,idx)=>{
+                {sortMembersByName(p.members.map((rawM,idx)=>({...normalizeMember(rawM),__idx:idx}))).map((rawM)=>{const idx=rawM.__idx;
                   const name = getMemberName(rawM);
                   const roles = getMemberRoles(rawM);
                   const memberBlocked = getMemberBlocked(rawM);
@@ -2492,7 +2661,7 @@ function App() {
             // generic soldier slot: prefer non-cmd platoons but allow all
             return true;
           });
-          if (members.length > 0) groups.push({key:k, platoon:p, members});
+          if (members.length > 0) groups.push({key:k, platoon:p, members: sortMembersByName(members)});
         });
         // Order: cmd platoons first if commander
         if (picker.isCommander) groups.sort((a,b) => (isCmdPlatoon(b.key)?1:0) - (isCmdPlatoon(a.key)?1:0));
@@ -2518,7 +2687,39 @@ function App() {
           });
           setPicker(null);
         };
+        // Find which mission this soldier is currently assigned to (if any)
+        const findAssignedTo = (name) => {
+          for (const [mid, ass] of Object.entries(dayAss)) {
+            if (mid === activeMission) continue;
+            const allP = [...(ass.commanders||[]),...(ass.soldiers||[])].filter(Boolean);
+            if (allP.some(p => p.name === name)) {
+              const m = allMissionDefs.find(x => x.id === mid);
+              return m ? (m.label || mid) : mid;
+            }
+          }
+          return null;
+        };
         const pickAndAssign = (name, platoonKey) => {
+          // If already assigned to another mission - ask for confirmation
+          const alreadyAt = findAssignedTo(name);
+          if (alreadyAt && !bypassConstraints) {
+            setRestConfirm({
+              name,
+              reason: `החייל כבר משובץ במשימה: ${alreadyAt}`,
+              onConfirm: () => {
+                if (blocked.has(name)) {
+                  setRestConfirm({
+                    name,
+                    reason: blockedReasons[name] || 'במנוחה לאחר משימה',
+                    onConfirm: () => doAssign(name, platoonKey)
+                  });
+                } else {
+                  doAssign(name, platoonKey);
+                }
+              }
+            });
+            return;
+          }
           if (blocked.has(name) && !bypassConstraints) {
             setRestConfirm({
               name,
@@ -2558,15 +2759,17 @@ function App() {
                       const isAftar = aftarNames.has(name);
                       const isGimel = gimelNames.has(name);
                       const isResting = blocked.has(name);
-                      const isBusy = isAssigned || isAftar || isGimel;
-                      const busyLabel = isAftar?"בבית":isGimel?"בגימל":isAssigned?"כבר משובץ":"";
+                      // Now: clicking already-assigned soldier asks confirmation; only hard-block aftar/gimel
+                      const isHardBusy = isAftar || isGimel;
+                      const busyLabel = isAftar?"בבית":isGimel?"בגימל":isAssigned?"⚠ כבר משובץ":"";
                       return (
-                        <button key={name} onClick={()=>!isBusy && pickAndAssign(name, g.key)}
-                          style={{...getPlatoonStyleFromMap(platoons,g.key),border:"none",borderRadius:8,padding:"10px 14px",fontFamily:"Heebo,sans-serif",fontSize:14,fontWeight:700,cursor:isBusy?"not-allowed":"pointer",opacity:isBusy?0.4:(isResting?0.7:1),display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:110, ...(isResting&&!isBusy?{outline:'2px solid #ffcc80'}:{})}}>
+                        <button key={name} onClick={()=>!isHardBusy && pickAndAssign(name, g.key)}
+                          style={{...getPlatoonStyleFromMap(platoons,g.key),border:"none",borderRadius:8,padding:"10px 14px",fontFamily:"Heebo,sans-serif",fontSize:14,fontWeight:700,cursor:isHardBusy?"not-allowed":"pointer",opacity:isHardBusy?0.4:(isAssigned||isResting?0.75:1),display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:110, ...(isAssigned&&!isHardBusy?{outline:'2px dashed #4f9cf9'}:isResting&&!isHardBusy?{outline:'2px solid #ffcc80'}:{})}}>
                           <span>{name}</span>
                           {roles.length>0 && <span style={{fontSize:9,opacity:0.85}}>{roles.join(" · ")}</span>}
-                          {isBusy && <span style={{fontSize:9,background:"rgba(0,0,0,0.3)",padding:"1px 5px",borderRadius:4}}>{busyLabel}</span>}
-                          {!isBusy && isResting && <span style={{fontSize:9,background:"rgba(255,204,128,0.3)",padding:"1px 5px",borderRadius:4,color:"#fff"}}>⚠ במנוחה (יישאל)</span>}
+                          {isHardBusy && <span style={{fontSize:9,background:"rgba(0,0,0,0.3)",padding:"1px 5px",borderRadius:4}}>{busyLabel}</span>}
+                          {!isHardBusy && isAssigned && <span style={{fontSize:9,background:"rgba(79,156,249,0.3)",padding:"1px 5px",borderRadius:4,color:"#fff"}}>⚠ כבר משובץ (יישאל)</span>}
+                          {!isHardBusy && !isAssigned && isResting && <span style={{fontSize:9,background:"rgba(255,204,128,0.3)",padding:"1px 5px",borderRadius:4,color:"#fff"}}>⚠ במנוחה (יישאל)</span>}
                         </button>
                       );
                     })}
