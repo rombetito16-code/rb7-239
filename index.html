@@ -238,6 +238,40 @@ const MISSION_DEFS = [
 
 // === HELPERS ===
 // Available member statuses: 'active' = normal, others = unavailable (blocked from missions + parade)
+// Military motivational quotes - rotate daily
+const MOTIVATIONAL_QUOTES = [
+  "אחרי הניצחון, חזקו את הקסדה.",
+  "אין מנצחים בלי אחווה.",
+  "הקושי של היום הוא הכוח של מחר.",
+  "מי שמוותר אף פעם, אף פעם לא ניצח.",
+  "כל יום של שירות הוא תרומה לעם.",
+  "האומץ הוא לא היעדר פחד, אלא לפעול למרות הפחד.",
+  "אחד למען כולם, כולם למען אחד.",
+  "המשמעת היא הגשר בין מטרות להישגים.",
+  "אנחנו לא לבד - אנחנו עם.",
+  "כל חייל הוא חוליה בשרשרת הברזל.",
+  "בשבילם — נמשיך לעמוד חזקים.",
+  "מילואים זה לא רק חובה, זה זכות.",
+  "מי שמוכן להגן הוא חופשי באמת.",
+  "תפקידנו הוא לא רק לשרת אלא להעניק תקווה.",
+  "הצוות הוא הבית השני - שמרו אחד על השני.",
+  "שום נצח לא מגיע בלי הקרבה.",
+  "הגיבורים האמיתיים לובשים מדים פשוטים.",
+  "כל שעה כאן היא יום של שקט בבית.",
+  "מהזיעה היום צומחת הגאווה מחר.",
+  "אנחנו לא רק שומרים - אנחנו בונים עתיד.",
+  "הקושי חולף, הגאווה נשארת.",
+  "תפקידנו - לחזור הביתה עם הראש מורם.",
+  "ביחד נצליח, ביחד ננצח.",
+  "ההיסטוריה נכתבת על ידי אלה שלא מוותרים.",
+  "כל מבצע מתחיל ברגע אחד של תעוזה.",
+  "הביטחון בא מהאחווה - לא מהנשק.",
+  "אחים לנשק - אחים לחיים.",
+  "מי שמשרת את אחיו - משרת את עצמו.",
+  "כל יום שעובר הוא צעד קרוב יותר הביתה.",
+  "הרוח חזקה יותר מהגוף - תזכרו את זה.",
+];
+
 const MEMBER_STATUSES = [
   { id: 'active', label: 'פעיל', color: '#34c77b', blocks: false },
   { id: 'abroad', label: 'חו"ל', color: '#26c6da', blocks: true },
@@ -385,28 +419,31 @@ async function exportDisplayToPDF(dayLabel) {
   const printStyle = document.createElement('style');
   printStyle.id = '__pdf_print_style';
   printStyle.textContent = `
-    #display-export-area { background: #fff !important; padding: 24px !important; font-family: 'Heebo', 'Arial Hebrew', Arial, sans-serif !important; }
-    #display-export-area * { letter-spacing: 0.4px !important; word-spacing: 4px !important; }
-    #display-export-area .display-grid { gap: 22px !important; zoom: 1 !important; }
-    #display-export-area .mcard { background: #ffffff !important; border: 3px solid #6b7a99 !important; box-shadow: 0 3px 8px rgba(0,0,0,0.08) !important; border-radius: 14px !important; }
-    #display-export-area .mcard-header { padding: 22px 24px 18px !important; border-bottom: 3px solid #dde3f0 !important; }
-    #display-export-area .mcard-title { color: #0a1535 !important; font-size: 36px !important; font-weight: 800 !important; line-height: 1.4 !important; margin: 8px 0 !important; }
-    #display-export-area .mcard-time { color: #1a2545 !important; font-size: 24px !important; font-weight: 700 !important; line-height: 1.5 !important; margin-top: 6px !important; word-spacing: 6px !important; }
-    #display-export-area .mcard-icon { font-size: 42px !important; }
-    #display-export-area .mcard-body { padding: 20px !important; gap: 14px !important; }
-    #display-export-area .slot-label { color: #2a3565 !important; font-size: 22px !important; font-weight: 800 !important; margin: 10px 0 6px !important; padding: 0 6px !important; letter-spacing: 0.6px !important; }
-    #display-export-area .ntag { font-size: 30px !important; font-weight: 800 !important; padding: 18px 22px !important; line-height: 1.5 !important; min-height: 60px !important; border-radius: 10px !important; word-spacing: 5px !important; }
-    #display-export-area .ntag.empty { background: #eef1f8 !important; color: #7a8095 !important; border-color: #cdd3e8 !important; font-style: italic !important; }
-    #display-export-area .ntag > div { line-height: 1.4 !important; margin: 4px 0 !important; }
-    #display-export-area .ntag-grid { gap: 14px !important; }
-    #display-export-area .mcard.compact .mcard-title { font-size: 26px !important; }
-    #display-export-area .mcard.compact .mcard-time { font-size: 20px !important; }
-    #display-export-area .mcard.compact .ntag { font-size: 24px !important; padding: 12px 18px !important; min-height: 44px !important; }
-    #display-export-area .mcard.compact .mcard-header { padding: 14px 18px !important; }
-    #display-export-area .mcard.compact .mcard-icon { font-size: 28px !important; }
-    #display-export-area .display-grid > div:first-child > div { background: linear-gradient(135deg,#1a2540,#0f1a35) !important; padding: 30px 56px !important; border-radius: 18px !important; }
+    #display-export-area { background: #fff !important; padding: 28px !important; font-family: 'Heebo', 'Arial Hebrew', Arial, sans-serif !important; }
+    #display-export-area * { letter-spacing: 0.5px !important; word-spacing: 6px !important; }
+    #display-export-area .display-grid { gap: 26px !important; zoom: 1 !important; }
+    #display-export-area .mcard { background: #ffffff !important; border: 4px solid #4a5575 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important; border-radius: 18px !important; }
+    #display-export-area .mcard-header { padding: 28px 30px 22px !important; border-bottom: 4px solid #c0c8dc !important; }
+    #display-export-area .mcard-title { color: #050d20 !important; font-size: 52px !important; font-weight: 900 !important; line-height: 1.3 !important; margin: 10px 0 !important; }
+    #display-export-area .mcard-time { color: #0a1535 !important; font-size: 32px !important; font-weight: 800 !important; line-height: 1.5 !important; margin-top: 10px !important; word-spacing: 8px !important; }
+    #display-export-area .mcard-icon { font-size: 56px !important; }
+    #display-export-area .mcard-body { padding: 26px !important; gap: 18px !important; }
+    #display-export-area .slot-label { color: #1a2545 !important; font-size: 28px !important; font-weight: 900 !important; margin: 12px 0 8px !important; padding: 0 8px !important; letter-spacing: 0.8px !important; }
+    #display-export-area .ntag { font-size: 44px !important; font-weight: 900 !important; padding: 22px 28px !important; line-height: 1.4 !important; min-height: 80px !important; border-radius: 14px !important; word-spacing: 7px !important; }
+    #display-export-area .ntag > div:first-child { font-size: 44px !important; font-weight: 900 !important; line-height: 1.3 !important; }
+    #display-export-area .ntag > div:not(:first-child) { font-size: 22px !important; font-weight: 700 !important; opacity: 1 !important; margin-top: 6px !important; letter-spacing: 1px !important; }
+    #display-export-area .ntag.empty { background: #eef1f8 !important; color: #6a7080 !important; border-color: #b8c0d8 !important; font-style: italic !important; }
+    #display-export-area .ntag-grid { gap: 18px !important; }
+    #display-export-area .mcard.compact .mcard-title { font-size: 38px !important; }
+    #display-export-area .mcard.compact .mcard-time { font-size: 26px !important; }
+    #display-export-area .mcard.compact .ntag { font-size: 36px !important; padding: 16px 22px !important; min-height: 60px !important; }
+    #display-export-area .mcard.compact .ntag > div:first-child { font-size: 36px !important; }
+    #display-export-area .mcard.compact .ntag > div:not(:first-child) { font-size: 19px !important; }
+    #display-export-area .mcard.compact .mcard-header { padding: 18px 22px !important; }
+    #display-export-area .mcard.compact .mcard-icon { font-size: 38px !important; }
+    #display-export-area .display-grid > div:first-child > div { background: linear-gradient(135deg,#1a2540,#0f1a35) !important; padding: 36px 66px !important; border-radius: 22px !important; }
     #display-export-area .display-grid > div:first-child > div * { color: #fff !important; line-height: 1.6 !important; }
-    #display-export-area .display-grid > div:first-child > div > div > div { margin: 6px 0 !important; }
+    #display-export-area .display-grid > div:first-child > div > div > div { margin: 8px 0 !important; }
   `;
   document.head.appendChild(printStyle);
   try {
@@ -429,12 +466,12 @@ async function exportDisplayToPDF(dayLabel) {
     const { jsPDF } = window.jspdf;
     const imgRatio = canvas.width / canvas.height;
     const orient = imgRatio >= 1 ? 'landscape' : 'portrait';
-    const pdf = new jsPDF({ orientation: orient, unit: 'mm', format: 'a3' });
+    const pdf = new jsPDF({ orientation: orient, unit: 'mm', format: 'a4' });
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
-    const headerH = 22;
-    const footerH = 12;
-    const margin = 8;
+    const headerH = 14;
+    const footerH = 8;
+    const margin = 4;
     const usableW = pageW - margin*2;
     const usableH = pageH - margin*2 - headerH - footerH;
     const pageRatio = usableW / usableH;
@@ -693,8 +730,17 @@ function App() {
   });
   const [customMissions, setCustomMissions] = useState([]);
   const [aftarSettings, setAftarSettings] = useState({ startH: 14, endH: 14 });
+  // Reserve duty period (used for grant calculator and calendar months)
+  const [reserveSettings, setReserveSettings] = useState({
+    startDate: (() => { const n=new Date(); const p=x=>String(x).padStart(2,'0'); return `${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())}`; })(),
+    endDate: (() => { const n=new Date(); n.setDate(n.getDate()+90); const p=x=>String(x).padStart(2,'0'); return `${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())}`; })(),
+    dailyAmount: 133,
+  });
   // Parade settings: night-shift window = late-wake-up; soldiers NOT in those hours AND not on mission attend
-  const [paradeSettings, setParadeSettings] = useState({ nightStart: 20, nightEnd: 6, paradeTime: '06:30' });
+  // Morning parade: anyone who STARTED a mission in 20:00-08:00 next morning = late wake. Parade time 9:30.
+  const [paradeSettings, setParadeSettings] = useState({ nightStart: 20, nightEnd: 8, paradeTime: '09:30' });
+  // Global rules - structured + free text
+  const [globalRules, setGlobalRules] = useState({ nightBeforeHome: true, freeText: '' });
   const [spontMissions, setSpontMissions] = useState([]);
   const [restExemptions, setRestExemptions] = useState(REST_EXEMPTIONS_DEFAULT);
   const [hiddenMissionsByDay, setHiddenMissionsByDay] = useState({});
@@ -745,6 +791,7 @@ function App() {
       const s = stored.settings;
       if (s.missionSettings) setMissionSettings(prev => ({...prev, ...s.missionSettings}));
       if (s.aftarSettings) setAftarSettings(s.aftarSettings);
+      if (s.reserveSettings) setReserveSettings(s.reserveSettings);
       if (s.spontMissions) setSpontMissions(s.spontMissions);
       if (s.hiddenMissionsByDay) setHiddenMissionsByDay(s.hiddenMissionsByDay);
       if (s.deletedMissions) setDeletedMissions(s.deletedMissions);
@@ -752,6 +799,8 @@ function App() {
       if (s.availableRoles) setAvailableRoles(s.availableRoles);
       if (s.customPasswords) setCustomPasswords(s.customPasswords);
       if (s.customMissions) setCustomMissions(s.customMissions);
+      if (s.paradeSettings) setParadeSettings(s.paradeSettings);
+      if (s.globalRules) setGlobalRules(s.globalRules);
       if (s.platoons) {
         setPlatoons(prev => {
           const next = JSON.parse(JSON.stringify(prev));
@@ -821,9 +870,9 @@ function App() {
       const data = {
         ass: allAss, aftar: aftarByDay,
         settings: {
-          missionSettings, aftarSettings, spontMissions,
+          missionSettings, aftarSettings, reserveSettings, spontMissions,
           hiddenMissionsByDay, deletedMissions, dayMissionOverrides,
-          availableRoles, customPasswords, customMissions,
+          availableRoles, customPasswords, customMissions, paradeSettings, globalRules,
           platoons: Object.fromEntries(Object.entries(platoons).map(([k,p])=>[k,p.members])),
         }
       };
@@ -837,7 +886,7 @@ function App() {
       }, 1500);
     }, 400);
     return () => clearTimeout(t);
-  }, [allAss, aftarByDay, missionSettings, aftarSettings, spontMissions, hiddenMissionsByDay, deletedMissions, dayMissionOverrides, platoons, availableRoles, customPasswords, customMissions]);
+  }, [allAss, aftarByDay, missionSettings, aftarSettings, reserveSettings, spontMissions, hiddenMissionsByDay, deletedMissions, dayMissionOverrides, platoons, availableRoles, customPasswords, customMissions]);
 
   const setAllAssAndSave = React.useCallback((valOrFn) => {
     setAllAss(prev => typeof valOrFn === 'function' ? valOrFn(prev) : valOrFn);
@@ -921,6 +970,100 @@ function App() {
   const [picker, setPicker] = React.useState(null);
   // Custom rest-override modal (replaces native confirm which may be blocked by browser)
   const [restConfirm, setRestConfirm] = React.useState(null); // {name, platoonKey, reason, onConfirm}
+  // Inline mission editor from display screen
+  const [editFromDisplay, setEditFromDisplay] = React.useState(null); // mission id
+  // Pending mission edit from display → opens settings/missions and triggers edit on that mission
+  const [pendingMissionEdit, setPendingMissionEdit] = React.useState(null);
+  // Inline mission edit modal (popup directly from display)
+  const [missionEditModal, setMissionEditModal] = React.useState(null); // {missionId, draft}
+  // Reserve period edit modal
+  const [editReserve, setEditReserve] = React.useState(false);
+
+  // Auto-assign: fill all empty slots across all visible missions for the active day
+  const autoAssignDay = React.useCallback(() => {
+    const isCmdPlatoon = (k) => CMD_PLATOONS.has(k) || (platoons[k]?.isCustomCmd === true);
+    setAllAssAndSave(prev => {
+      const c = JSON.parse(JSON.stringify(prev));
+      if (!c[activeDay]) c[activeDay] = initDayAssignments();
+      const usedNames = new Set();
+      Object.values(c[activeDay]||{}).forEach(a => {
+        [...(a.commanders||[]),...(a.soldiers||[])].filter(Boolean).forEach(p => usedNames.add(p.name));
+      });
+      const aftarToday = new Set(aftarByDay[activeDay] || []);
+      const gimelToday = new Set([...(c[activeDay]?.gimel?.soldiers || [])].filter(Boolean).map(p=>p.name));
+      const prevDayIdx = DAY_IDS.indexOf(activeDay) - 1;
+      const prevAftar = new Set(prevDayIdx>=0 ? (aftarByDay[DAY_IDS[prevDayIdx]]||[]) : []);
+      const nextDayIdx = DAY_IDS.indexOf(activeDay) + 1;
+      const nextAftar = new Set(nextDayIdx<DAY_IDS.length ? (aftarByDay[DAY_IDS[nextDayIdx]]||[]) : []);
+      const allCands = Object.entries(platoons).flatMap(([k,p]) =>
+        p.members.map(rawM => {
+          const status = getMemberStatus ? getMemberStatus(rawM) : 'active';
+          return {
+            name: getMemberName(rawM),
+            platoon: k,
+            roles: getMemberRoles(rawM),
+            blocked: getMemberBlocked(rawM),
+            isCmdPlat: isCmdPlatoon(k),
+            statusBlocked: (typeof getStatusInfo === 'function') ? getStatusInfo(status).blocks : false,
+          };
+        })
+      );
+      const priorityOrder = (mid) => {
+        if (mid === "katzin") return 0;
+        if (mid.includes("siyur")) return 1;
+        if (mid === "hetz4") return 2;
+        if (mid.startsWith("sg")) return 3;
+        if (mid === "philbox") return 4;
+        return 5;
+      };
+      const missions = allMissionDefs
+        .filter(m => !deletedMissions.includes(m.id))
+        .filter(m => !isMissionHiddenOnDay(activeDay, m.id))
+        .filter(m => m.id !== "gimel" && m.id !== "maatzar")
+        .sort((a,b)=>priorityOrder(a.id)-priorityOrder(b.id));
+      for (const m of missions) {
+        const ms = getMissionSlots(m);
+        const ass = c[activeDay][m.id] = c[activeDay][m.id] || {commanders:Array(ms.commander).fill(null), soldiers:Array(ms.soldiers).fill(null)};
+        while (ass.commanders.length < ms.commander) ass.commanders.push(null);
+        while (ass.soldiers.length < ms.soldiers) ass.soldiers.push(null);
+        const restBlocked = getBlockedNames(c, activeDay, m, missionSettings, platoons, restExemptions).blocked;
+        // Night-shift-before-home rule: if soldier goes home tomorrow, don't assign to night missions (starting >=20:00)
+        const isNightMission = (m.startH || 0) >= 20 || (m.endH || 0) > 24;
+        const baseCanUse = (p) => {
+          if (usedNames.has(p.name)) return false;
+          if (p.statusBlocked) return false;
+          if (aftarToday.has(p.name) || gimelToday.has(p.name) || prevAftar.has(p.name)) return false;
+          if (p.blocked.includes(m.id)) return false;
+          if (restBlocked.has(p.name)) return false;
+          if (m.allowedNames && m.allowedNames.length>0 && !m.allowedNames.includes(p.name)) return false;
+          // Apply global night-before-home rule if enabled
+          if (typeof globalRules !== 'undefined' && globalRules?.nightBeforeHome && isNightMission && nextAftar.has(p.name)) return false;
+          return true;
+        };
+        for (let i = 0; i < ms.commander; i++) {
+          if (ass.commanders[i]) continue;
+          const cand = allCands.find(p => baseCanUse(p) && (p.isCmdPlat || p.roles.some(r => ["מפקד","סמל","קצין"].includes(r))))
+                  || allCands.find(p => baseCanUse(p));
+          if (cand) { ass.commanders[i] = {name:cand.name, platoon:cand.platoon}; usedNames.add(cand.name); }
+        }
+        for (let i = 0; i < ms.soldiers; i++) {
+          if (ass.soldiers[i]) continue;
+          let requiredRole = null;
+          if (ms.roleSlots) {
+            let cum = 0;
+            for (const rs of ms.roleSlots) {
+              if (i < cum + rs.count) { requiredRole = rs.role; break; }
+              cum += rs.count;
+            }
+          }
+          const cand = allCands.find(p => baseCanUse(p) && (!requiredRole || p.roles.includes(requiredRole)) && (requiredRole || !p.isCmdPlat))
+                  || allCands.find(p => baseCanUse(p) && (!requiredRole || p.roles.includes(requiredRole)));
+          if (cand) { ass.soldiers[i] = {name:cand.name, platoon:cand.platoon}; usedNames.add(cand.name); }
+        }
+      }
+      return c;
+    });
+  }, [activeDay, allMissionDefs, deletedMissions, isMissionHiddenOnDay, aftarByDay, platoons, missionSettings, restExemptions]);
 
   function slotClick(type, idx) {
     const effM = getEffectiveMission(mission, activeDay);
@@ -1001,48 +1144,80 @@ function App() {
   function DisplayView() {
     const f = visibleMissions.filter(m => !m.hideFromDisplay);
     const col1=f.filter(m=>m.col===1), col2=f.filter(m=>m.col===2), col3=f.filter(m=>m.col===3), col4=f.filter(m=>m.col===4), col5=f.filter(m=>m.col===5), col6=f.filter(m=>m.col===6);
-    const numCols = [col1,col2,col3,col4,col5,col6].filter(c=>c.length>0).length + (aftarThisDay.length>0 ? 1 : 0);
+    // "בבית" column removed from display per user request
+    const numCols = [col1,col2,col3,col4,col5,col6].filter(c=>c.length>0).length;
     return (
       <div className="main">
         <div id="display-export-area" style={{background:"var(--bg)",padding:8,borderRadius:12}}>
           <div className="display-grid" style={{gridTemplateColumns:`repeat(${numCols||1},1fr)`,zoom:0.80}}>
-            <div style={{gridColumn:"1 / -1",display:"grid",placeItems:"center",marginBottom:4}}>
-              <div style={{background:"linear-gradient(135deg,#1a2540,#0f1a35)",border:"2px solid var(--accent)",borderRadius:14,padding:"8px 28px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 0 18px rgba(79,156,249,0.25), 0 2px 8px rgba(0,0,0,0.4)"}}>
-                <span style={{fontSize:18}}>📅</span>
-                <div style={{textAlign:"center"}}>
+            <div style={{gridColumn:"1 / -1",display:"grid",placeItems:"stretch",marginBottom:4}}>
+              <div style={{background:"linear-gradient(135deg,#1a2540,#0f1a35)",border:"2px solid var(--accent)",borderRadius:14,padding:"12px 24px",display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:14,boxShadow:"0 0 18px rgba(79,156,249,0.25), 0 2px 8px rgba(0,0,0,0.4)"}}>
+                {/* Right side: daily motivation quote */}
+                <div style={{textAlign:"right",direction:"rtl",color:"#e8eaf0",fontSize:14,fontWeight:600,lineHeight:1.5,padding:"4px 10px",borderRight:"3px solid #4f9cf9",fontStyle:"italic",maxWidth:280}}>
+                  💪 {(() => {
+                    const idx = activeDay ? DAY_IDS.indexOf(activeDay) : 0;
+                    return MOTIVATIONAL_QUOTES[((idx % MOTIVATIONAL_QUOTES.length)+MOTIVATIONAL_QUOTES.length)%MOTIVATIONAL_QUOTES.length];
+                  })()}
+                </div>
+                {/* Center: date */}
+                <div style={{textAlign:"center",padding:"0 14px"}}>
+                  <span style={{fontSize:20}}>📅</span>
                   <div style={{fontSize:13,color:"white",fontWeight:500,letterSpacing:1}}>יום {activeDayObj?.label}</div>
-                  <div style={{fontSize:28,fontWeight:800,color:"var(--accent)",letterSpacing:1,lineHeight:1.1}}>{activeDayObj?.date}</div>
+                  <div style={{fontSize:32,fontWeight:800,color:"var(--accent)",letterSpacing:1,lineHeight:1.1}}>{activeDayObj?.date}</div>
                   <div style={{fontSize:12,color:"white",fontWeight:600,letterSpacing:2,marginTop:3}}>{APP_TITLE}</div>
+                </div>
+                {/* Left side: grant calculator */}
+                <div style={{textAlign:"left",direction:"rtl",padding:"4px 10px",borderLeft:"3px solid #34c77b"}}>
+                  {(() => {
+                    const startStr = reserveSettings.startDate;
+                    const endStr = reserveSettings.endDate;
+                    const daily = reserveSettings.dailyAmount || 133;
+                    if (!startStr || !endStr || !activeDayObj) return null;
+                    const start = new Date(startStr);
+                    const end = new Date(endStr);
+                    const [dy,dm,dd] = activeDay.split('_').map(Number);
+                    const cur = new Date(dy, dm-1, dd);
+                    const totalDays = Math.max(0, Math.round((end-start)/86400000) + 1);
+                    const daysPassed = Math.max(0, Math.min(totalDays, Math.round((cur-start)/86400000) + 1));
+                    const accumulated = daysPassed * daily;
+                    const totalGrant = totalDays * daily;
+                    const pct = totalGrant > 0 ? Math.min(100, Math.round(daysPassed / totalDays * 100)) : 0;
+                    return (
+                      <>
+                        <div style={{fontSize:11,color:"#a5d6a7",fontWeight:600,marginBottom:2,display:"flex",alignItems:"center",gap:6}}>
+                          <span>💰 מענק מצטבר ב-1.5.27</span>
+                          <button onClick={()=>setEditReserve(true)} title="ערוך תקופת מילואים" style={{background:"rgba(52,199,123,0.25)",border:"1px solid #34c77b",borderRadius:5,color:"#34c77b",cursor:"pointer",padding:"1px 7px",fontSize:10,fontWeight:700,fontFamily:"Heebo,sans-serif"}}>✏️ ערוך</button>
+                        </div>
+                        <div style={{fontSize:24,fontWeight:800,color:"#34c77b",lineHeight:1.1,direction:"ltr",textAlign:"right"}}>{accumulated.toLocaleString('he-IL')} ₪</div>
+                        <div style={{fontSize:10,color:"#c8e6c9",marginTop:2}}>יום {daysPassed} מתוך {totalDays} · {daily} ₪/יום</div>
+                        <div style={{background:"rgba(52,199,123,0.15)",height:6,borderRadius:3,marginTop:5,overflow:"hidden"}}>
+                          <div style={{background:"#34c77b",height:"100%",width:pct+"%",transition:"width .4s"}}/>
+                        </div>
+                        <div style={{fontSize:9,color:"#9ccc65",marginTop:2}}>סך הכל: {totalGrant.toLocaleString('he-IL')} ₪</div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
-            {aftarThisDay.length>0 && (
-              <div className="display-col">
-                <div className="mcard" style={{borderColor:"#e67e2244",flex:1}}>
-                  <div className="mcard-header">
-                    <span className="mcard-icon">🏠</span>
-                    <div style={{flex:1}}>
-                      <div className="mcard-title">בבית</div>
-                      <div className="mcard-time">יציאה {aftarSettings.startH}:00 / חזרה {aftarSettings.endH}:00</div>
-                    </div>
-                    <div style={{fontSize:11,fontWeight:700,color:"var(--text3)"}}>{aftarThisDay.length}</div>
-                  </div>
-                  <div className="mcard-body">
-                    <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                      {aftarThisDay.map(name => {
-                        const member = allMembers.find(m=>m.name===name);
-                        return (
-                          <div key={name} className="ntag filled" style={{...(member?getPlatoonStyle(member.platoon):{background:"#555",color:"#fff"}),width:"100%",textAlign:"center",fontSize:12,fontWeight:700,padding:"5px 8px"}}>{name}</div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
             {[col1,col2,col3,col4,col5,col6].map((col,ci)=>col.length>0 && (
               <div key={ci} className="display-col">
-                {col.map(m=><SafeDisplayCard key={m.id} mission={m} assignment={dayAss[m.id]} dayId={activeDay} platoons={platoons}/>)}
+                {col.map(m=>(
+                  <div key={m.id} style={{position:"relative"}}>
+                    <button onClick={(e)=>{
+                      e.stopPropagation();
+                      const cur = missionSettings[m.id] || {
+                        label: m.label, icon: m.icon, time: m.time,
+                        startH: m.startH, endH: m.endH,
+                        restHours: 0, slots_commander: m.slots.commander, slots_soldiers: m.slots.soldiers,
+                        col: m.col || 1, roleSlots: m.roleSlots || [], allowedNames: m.allowedNames || [],
+                      };
+                      setMissionEditModal({missionId: m.id, mission: m, draft: {...cur, roleSlots: cur.roleSlots || []}});
+                    }} title="ערוך הגדרות משימה"
+                      style={{position:"absolute",top:6,left:6,zIndex:5,background:"rgba(79,156,249,0.85)",border:"none",borderRadius:6,color:"#fff",cursor:"pointer",padding:"3px 8px",fontSize:11,fontWeight:700,fontFamily:"Heebo,sans-serif"}}>✏️ ערוך</button>
+                    <SafeDisplayCard mission={m} assignment={dayAss[m.id]} dayId={activeDay} platoons={platoons}/>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
@@ -1289,17 +1464,32 @@ function App() {
 
     const monthGroups = React.useMemo(() => {
       const groups = {};
+      // Determine month range from reserveSettings (if set), else fallback to April-August
+      let startY = null, startM = null, endY = null, endM = null;
+      if (reserveSettings.startDate && reserveSettings.endDate) {
+        const s = new Date(reserveSettings.startDate);
+        const e = new Date(reserveSettings.endDate);
+        startY = s.getFullYear(); startM = s.getMonth()+1;
+        endY = e.getFullYear(); endM = e.getMonth()+1;
+      }
       DAYS.forEach(d => {
-        const [y,m] = d.id.split('_');
-        const mNum = parseInt(m);
-        // Only show months 4-8 (April-August)
-        if (mNum < 4 || mNum > 8) return;
-        const key = `${y}_${m}`;
+        const [y,m] = d.id.split('_').map(Number);
+        if (startY !== null) {
+          // Show only months within reserve period
+          const dKey = y*12 + m;
+          const sKey = startY*12 + startM;
+          const eKey = endY*12 + endM;
+          if (dKey < sKey || dKey > eKey) return;
+        } else {
+          // Fallback: April-August
+          if (m < 4 || m > 8) return;
+        }
+        const key = `${y}_${String(m).padStart(2,'0')}`;
         if (!groups[key]) groups[key] = [];
         groups[key].push(d);
       });
       return Object.entries(groups);
-    }, []);
+    }, [reserveSettings]);
 
     const handleDateClick = (dayId) => {
       if (manageDay === dayId) { setManageDay(null); return; }
@@ -1609,7 +1799,7 @@ function App() {
 
   // ═══ SETTINGS VIEW ═══
   function SettingsView() {
-    const [settingsTab, setSettingsTab] = useState("missions");
+    const [settingsTab, setSettingsTab] = useState(pendingMissionEdit ? "missions" : "missions");
     const inp = {display:"block",width:"100%",marginTop:3,padding:"5px 8px",borderRadius:7,border:"1px solid var(--border2)",background:"var(--surface2)",color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:13};
     const btn = (extra={}) => ({background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text2)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:12,padding:"4px 10px",...extra});
     const [editId, setEditId] = useState(null);
@@ -1627,6 +1817,22 @@ function App() {
       setEditId(m.id);
       setDraft({...cur, roleSlots: cur.roleSlots || []});
     };
+    // Auto-open the requested mission edit (from display screen)
+    React.useEffect(() => {
+      if (pendingMissionEdit) {
+        const m = [...MISSION_DEFS, ...customMissions].find(x => x.id === pendingMissionEdit);
+        if (m) {
+          setSettingsTab("missions");
+          startEdit(m);
+          setTimeout(() => {
+            const el = document.getElementById('mission-edit-' + pendingMissionEdit);
+            if (el) el.scrollIntoView({behavior:'smooth', block:'center'});
+          }, 100);
+        }
+        setPendingMissionEdit(null);
+      }
+    // eslint-disable-next-line
+    }, [pendingMissionEdit]);
     const addNewMission = () => {
       if (!newMissionDraft.label.trim()) { alert("חסר שם משימה"); return; }
       const id = "custom_" + Date.now();
@@ -1694,7 +1900,9 @@ function App() {
         <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
           <button style={tabStyle("missions")} onClick={()=>setSettingsTab("missions")}>⚙️ משימות</button>
           <button style={tabStyle("aftar")} onClick={()=>setSettingsTab("aftar")}>🏠 יציאה הביתה</button>
+          <button style={tabStyle("reserve")} onClick={()=>setSettingsTab("reserve")}>📅 תקופת מילואים</button>
           <button style={tabStyle("roles")} onClick={()=>setSettingsTab("roles")}>🎖️ תפקידים</button>
+          <button style={tabStyle("rules")} onClick={()=>setSettingsTab("rules")}>📜 חוקים</button>
           <button style={tabStyle("password")} onClick={()=>setSettingsTab("password")}>🔐 סיסמה</button>
         </div>
         {settingsTab==="missions" && (
@@ -1748,7 +1956,7 @@ function App() {
                 const isEditing = editId === m.id;
                 const hiddenCount = DAY_IDS.filter(d => isMissionHiddenOnDay(d, m.id)).length;
                 return (
-                  <div key={m.id} style={{background:"var(--surface)",border:`1.5px solid ${isEditing?"var(--accent)":m.border+"66"}`,borderRadius:12,overflow:"hidden"}}>
+                  <div key={m.id} id={"mission-edit-"+m.id} style={{background:"var(--surface)",border:`1.5px solid ${isEditing?"var(--accent)":m.border+"66"}`,borderRadius:12,overflow:"hidden"}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",flexWrap:"wrap"}}>
                       <span style={{fontSize:10}}>{hiddenCount===0?"🟢":hiddenCount===DAY_IDS.length?"🔴":"🟡"}</span>
                       <span style={{fontSize:15}}>{s.icon||m.icon}</span>
@@ -1882,6 +2090,43 @@ function App() {
             </div>
           </div>
         )}
+        {settingsTab==="reserve" && (
+          <div style={{maxWidth:600}}>
+            <div style={{fontSize:16,fontWeight:800,marginBottom:14}}>📅 תקופת מילואים ומענק</div>
+            <div style={{background:"var(--surface)",border:"1.5px solid var(--border)",borderRadius:14,padding:"20px"}}>
+              <div style={{fontSize:13,color:"var(--text2)",marginBottom:16,lineHeight:1.6}}>
+                הגדר את תאריכי תחילת וסיום המילואים. הסכום המצטבר מוצג בכותרת התצוגה, ומשפיע גם על חודשי לוח החופשות.
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+                <label style={{fontSize:12,color:"var(--text2)"}}>תאריך תחילה
+                  <input type="date" style={inp} value={reserveSettings.startDate} onChange={e=>setReserveSettings(s=>({...s,startDate:e.target.value}))}/>
+                </label>
+                <label style={{fontSize:12,color:"var(--text2)"}}>תאריך סיום
+                  <input type="date" style={inp} value={reserveSettings.endDate} onChange={e=>setReserveSettings(s=>({...s,endDate:e.target.value}))}/>
+                </label>
+              </div>
+              <label style={{fontSize:12,color:"var(--text2)"}}>סכום יומי (ש"ח)
+                <input type="number" min={0} max={9999} style={inp} value={reserveSettings.dailyAmount} onChange={e=>setReserveSettings(s=>({...s,dailyAmount:+e.target.value}))}/>
+              </label>
+              {(() => {
+                if (!reserveSettings.startDate || !reserveSettings.endDate) return null;
+                const s = new Date(reserveSettings.startDate);
+                const e = new Date(reserveSettings.endDate);
+                const days = Math.max(0, Math.round((e-s)/86400000) + 1);
+                const total = days * (reserveSettings.dailyAmount || 0);
+                return (
+                  <div style={{marginTop:14,padding:"12px 14px",background:"#34c77b22",border:"1px solid #34c77b",borderRadius:9}}>
+                    <div style={{fontSize:12,color:"#a5d6a7",fontWeight:700,marginBottom:4}}>💰 סיכום</div>
+                    <div style={{fontSize:14,color:"var(--text)",lineHeight:1.6}}>
+                      סה"כ ימים: <strong style={{color:"#34c77b"}}>{days}</strong><br/>
+                      סה"כ מענק צפוי: <strong style={{color:"#34c77b",fontSize:18}}>{total.toLocaleString('he-IL')} ₪</strong>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
         {settingsTab==="roles" && (
           <div style={{maxWidth:600}}>
             <div style={{fontSize:16,fontWeight:800,marginBottom:14}}>🎖️ ניהול תפקידים</div>
@@ -1951,6 +2196,29 @@ function App() {
             </div>
           </div>
         )}
+        {settingsTab==="rules" && (
+          <div style={{maxWidth:700}}>
+            <div style={{fontSize:16,fontWeight:800,marginBottom:14}}>📜 חוקים והתניות גלובליים</div>
+            <div style={{fontSize:12,color:"var(--text2)",marginBottom:14,lineHeight:1.6}}>חוקים שיוחלו על השיבוץ האוטומטי וכוללים אזהרות בשיבוץ ידני.</div>
+            <div style={{background:"var(--surface)",border:"1.5px solid var(--accent)",borderRadius:14,padding:"16px",marginBottom:14}}>
+              <div style={{fontSize:13,fontWeight:700,color:"var(--accent)",marginBottom:10}}>חוקים מובנים</div>
+              <label style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 4px",cursor:"pointer",borderBottom:"1px solid var(--border)"}}>
+                <input type="checkbox" checked={globalRules.nightBeforeHome} onChange={e=>setGlobalRules(r=>({...r,nightBeforeHome:e.target.checked}))} style={{marginTop:3,transform:"scale(1.2)"}}/>
+                <div>
+                  <div style={{fontWeight:700,fontSize:13,color:"var(--text)"}}>🌙 ללא משימות לילה לפני יציאה הביתה</div>
+                  <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>חייל לא יישובץ למשימות שמתחילות מ-20:00 ומעלה אם הוא יוצא הביתה למחרת</div>
+                </div>
+              </label>
+            </div>
+            <div style={{background:"var(--surface)",border:"1.5px solid var(--border)",borderRadius:14,padding:"16px"}}>
+              <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>📝 הערות חופשיות / חוקים מותאמים</div>
+              <div style={{fontSize:11,color:"var(--text3)",marginBottom:8}}>תיעוד והערות לזכרון. החוקים האלה לא נאכפים אוטומטית אך מוצגים כתזכורת.</div>
+              <textarea value={globalRules.freeText} onChange={e=>setGlobalRules(r=>({...r,freeText:e.target.value}))}
+                placeholder="לדוגמה:&#10;• חייל לא יכול לעלות למשימות לילה (מ-20:00) אם הוא יום למחרת יוצא לבית&#10;• אין שיבוץ של נהג חדש לסיור לילה&#10;• מפקדים יקבלו מנוחה של 12 שעות לפחות בין משימות"
+                style={{width:"100%",minHeight:200,padding:12,borderRadius:9,border:"1.5px solid var(--border2)",background:"var(--surface2)",color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:13,resize:"vertical",lineHeight:1.6}}/>
+            </div>
+          </div>
+        )}
         {settingsTab==="password" && (
           <div style={{maxWidth:500}}>
             <div style={{fontSize:16,fontWeight:800,marginBottom:14}}>🔐 ניהול סיסמאות</div>
@@ -1975,15 +2243,25 @@ function App() {
   // ═══ MORNING PARADE VIEW ═══
   function ParadeView() {
     const inp = {display:"block",width:"100%",marginTop:3,padding:"5px 8px",borderRadius:7,border:"1px solid var(--border2)",background:"var(--surface2)",color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:13};
-    // Compute people who had missions intersecting the night window [nightStart..nightEnd next morning]
+    // Late wake = anyone whose mission STARTED in [nightStart..(24+nightEnd)] window
     const nightStart = paradeSettings.nightStart;
     const nightEnd = paradeSettings.nightEnd;
-    // Night window in absolute hours: [nightStart, 24+nightEnd] - i.e. mission startH < 24+nightEnd AND endH > nightStart
-    const inNightWindow = (m) => {
-      // Translate mission startH/endH (0..30) to overlap with [nightStart, 24+nightEnd]
-      const ms = m.startH ?? 0, me = m.endH ?? 24;
-      const winStart = nightStart, winEnd = 24 + nightEnd;
-      return ms < winEnd && me > winStart;
+    // Check if mission STARTED in night window (not just intersected)
+    // For the prev day: mission startH >= nightStart (20:00-24:00)
+    // For current day: mission startH < nightEnd (00:00-08:00)
+    const startedInNight = (m, dayOffset) => {
+      const ms = m.startH ?? 0;
+      // dayOffset 0 = activeDay, -1 = previous day
+      // For previous day: count if startH >= nightStart (e.g. 20:00) OR startH >= nightStart+24 wrap
+      if (dayOffset === -1) {
+        // Mission on previous day - count if started >= nightStart (e.g. >=20:00)
+        return ms >= nightStart || ms >= (nightStart + 24);
+      }
+      if (dayOffset === 0) {
+        // Mission today - count if started before nightEnd (e.g. <08:00)
+        return ms < nightEnd;
+      }
+      return false;
     };
     const prevDayIdx = DAY_IDS.indexOf(activeDay) - 1;
     const prevDay = prevDayIdx >= 0 ? DAY_IDS[prevDayIdx] : null;
@@ -1993,18 +2271,19 @@ function App() {
     // Build sets per soldier
     const lateWake = new Set(); // had night-shift missions
     const onMissionMorning = new Set(); // currently on a mission in morning hours (e.g. matbah / sg morning)
-    const allDays = prevDay ? [prevDay, activeDay] : [activeDay];
-    allDays.forEach(dId => {
+    const allDays = prevDay ? [{id: prevDay, offset: -1}, {id: activeDay, offset: 0}] : [{id: activeDay, offset: 0}];
+    allDays.forEach(({id: dId, offset}) => {
       const da = allAss[dId] || {};
       Object.entries(da).forEach(([mid, ass]) => {
         const m = allMissionDefs.find(x => x.id === mid) || customMissions.find(x => x.id === mid) || MISSION_DEFS.find(x => x.id === mid);
         if (!m) return;
         const allP = [...(ass.commanders||[]),...(ass.soldiers||[])].filter(Boolean);
-        if (inNightWindow(m)) {
+        if (startedInNight(m, offset)) {
           allP.forEach(p => lateWake.add(p.name));
         }
-        // morning slots (active during the parade time)
-        const paradeH = parseInt((paradeSettings.paradeTime||'06:30').split(':')[0]) + (parseInt((paradeSettings.paradeTime||'06:30').split(':')[1]||0)/60);
+        // morning slots (active during the parade time on today)
+        const paradeStr = paradeSettings.paradeTime || '09:30';
+        const paradeH = parseInt(paradeStr.split(':')[0]||0) + (parseInt(paradeStr.split(':')[1]||0)/60);
         if (dId === activeDay && (m.startH ?? 0) <= paradeH && (m.endH ?? 24) > paradeH) {
           allP.forEach(p => onMissionMorning.add(p.name));
         }
@@ -2408,11 +2687,11 @@ function App() {
           </button>
         </div>
         {view==="display" && <button onClick={()=>exportDisplayToPDF(`${activeDayObj?.label}_${activeDayObj?.date}`)} style={{background:"#ef535022",border:"1px solid #ef5350",borderRadius:7,color:"#ef5350",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"4px 12px"}}>📄 ייצוא PDF</button>}
+        {(view==="display"||view==="builder") && <button onClick={()=>{ if(confirm(`לבצע שיבוץ אוטומטי ליום ${activeDayObj?.date}? פעולה זו תמלא תאים ריקים בלבד.`)) autoAssignDay(); }} style={{background:"#34c77b22",border:"1px solid var(--green)",borderRadius:7,color:"var(--green)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"4px 12px",whiteSpace:"nowrap"}}>🪄 שבצ"ק אוטומטי</button>}
         <button onClick={()=>{
           const dlabel = activeDayObj ? `${activeDayObj.label} ${activeDayObj.date}` : 'היום';
-          if(confirm(`לאפס את השיבוצים והיציאות של ${dlabel} בלבד?`)){
+          if(confirm(`לאפס את שיבוצי המשימות של ${dlabel} בלבד?\n(יציאות הביתה יישמרו)`)){
             setAllAssAndSave(prev => { const c = JSON.parse(JSON.stringify(prev)); c[activeDay] = initDayAssignments(); return c; });
-            setAftarByDayAndSave(prev => { const c = JSON.parse(JSON.stringify(prev)); c[activeDay] = []; return c; });
           }
         }} title="מאפס רק את היום הנוכחי" style={{background:"none",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text3)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,padding:"4px 10px"}}>🗑 איפוס היום</button>
         <button onClick={()=>{ if(confirm("⚠️ למחוק את כל השיבוצים של כל הימים? פעולה זו אינה הפיכה!")){ setAllAssAndSave(freshAss()); setAftarByDayAndSave(freshAftar()); }}} title="מאפס את כל הימים" style={{background:"none",border:"1px solid #ef535066",borderRadius:7,color:"#ef5350",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,padding:"4px 10px"}}>🗑🗑 איפוס הכל</button>
@@ -2438,6 +2717,7 @@ function App() {
                   const s = data.settings;
                   if (s.missionSettings) setMissionSettings(prev => ({...prev, ...s.missionSettings}));
                   if (s.aftarSettings) setAftarSettings(s.aftarSettings);
+      if (s.reserveSettings) setReserveSettings(s.reserveSettings);
                   if (s.spontMissions) setSpontMissions(s.spontMissions);
                   if (s.hiddenMissionsByDay) setHiddenMissionsByDay(s.hiddenMissionsByDay);
                   if (s.deletedMissions) setDeletedMissions(s.deletedMissions);
@@ -2445,6 +2725,8 @@ function App() {
                   if (s.availableRoles) setAvailableRoles(s.availableRoles);
                   if (s.customPasswords) setCustomPasswords(s.customPasswords);
                   if (s.customMissions) setCustomMissions(s.customMissions);
+      if (s.paradeSettings) setParadeSettings(s.paradeSettings);
+      if (s.globalRules) setGlobalRules(s.globalRules);
                   if (s.platoons) {
                     setPlatoons(prev => {
                       const next = JSON.parse(JSON.stringify(prev));
@@ -2638,6 +2920,127 @@ function App() {
                 style={{background:"var(--surface2)",color:"var(--text2)",border:"1px solid var(--border2)",borderRadius:9,padding:"10px 24px",fontFamily:"Heebo,sans-serif",fontSize:14,fontWeight:700,cursor:"pointer"}}>
                 ביטול
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {missionEditModal && (() => {
+        const inp = {display:"block",width:"100%",marginTop:3,padding:"6px 10px",borderRadius:7,border:"1px solid var(--border2)",background:"var(--surface2)",color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:13};
+        const btn = (extra={}) => ({background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text2)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:12,padding:"4px 10px",...extra});
+        const editId = missionEditModal.missionId;
+        const draft = missionEditModal.draft;
+        const setDraft = (updater) => setMissionEditModal(prev => prev ? {...prev, draft: typeof updater === 'function' ? updater(prev.draft) : updater} : prev);
+        const m = missionEditModal.mission;
+        const saveAndClose = () => {
+          const prev_s = missionSettings[editId];
+          const updated = {...missionSettings, [editId]: {...draft}};
+          setMissionSettings(updated);
+          if (draft.slots_commander !== prev_s?.slots_commander || draft.slots_soldiers !== prev_s?.slots_soldiers) {
+            setAllAssAndSave(prev => {
+              const c = JSON.parse(JSON.stringify(prev));
+              DAY_IDS.forEach(dayId => {
+                if (!c[dayId] || !c[dayId][editId]) return;
+                const cur = c[dayId][editId];
+                const newCmd = draft.slots_commander || 0;
+                const newSol = draft.slots_soldiers || 0;
+                const resizeArr = (arr, size) => {
+                  const a = Array(size).fill(null);
+                  (arr||[]).forEach((v,i) => { if(i<size) a[i]=v; });
+                  return a;
+                };
+                c[dayId][editId] = {
+                  commanders: resizeArr(cur.commanders, newCmd),
+                  soldiers: resizeArr(cur.soldiers, newSol),
+                };
+              });
+              return c;
+            });
+          }
+          setMissionEditModal(null);
+        };
+        return (
+          <div onClick={()=>setMissionEditModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+            <div onClick={e=>e.stopPropagation()} style={{background:"var(--surface)",border:`3px solid ${m.border&&m.border!=="#555"?m.border:"var(--accent)"}`,borderRadius:16,padding:24,maxWidth:700,width:"100%",maxHeight:"90vh",overflow:"auto",boxShadow:"0 0 60px rgba(79,156,249,0.35)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18,borderBottom:"2px solid var(--border)",paddingBottom:12}}>
+                <span style={{fontSize:32}}>{draft.icon || m.icon}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:11,color:"var(--text3)",marginBottom:2}}>הגדרות משימה</div>
+                  <div style={{fontSize:20,fontWeight:800,color:"var(--text)"}}>{draft.label || m.label}</div>
+                </div>
+                <button onClick={()=>setMissionEditModal(null)} style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text2)",cursor:"pointer",padding:"6px 14px",fontFamily:"Heebo,sans-serif",fontSize:13}}>✕ סגור</button>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:10,marginBottom:14}}>
+                <label style={{fontSize:11,color:"var(--text2)",fontWeight:700}}>📝 שם משימה<input style={inp} value={draft.label||""} onChange={e=>setDraft(d=>({...d,label:e.target.value}))}/></label>
+                <label style={{fontSize:11,color:"var(--text2)",fontWeight:700}}>🎯 אייקון<input style={inp} value={draft.icon||""} onChange={e=>setDraft(d=>({...d,icon:e.target.value}))}/></label>
+                <label style={{fontSize:11,color:"var(--text2)",fontWeight:700}}>🕐 שעות תצוגה<input style={inp} value={draft.time||""} placeholder="06:00-14:00" onChange={e=>setDraft(d=>({...d,time:e.target.value}))}/></label>
+                <label style={{fontSize:11,color:"var(--text2)",fontWeight:700}}>⏰ שעת התחלה<input type="number" min={0} max={30} style={inp} value={draft.startH||0} onChange={e=>setDraft(d=>({...d,startH:+e.target.value}))}/></label>
+                <label style={{fontSize:11,color:"var(--text2)",fontWeight:700}}>⏰ שעת סיום<input type="number" min={0} max={30} style={inp} value={draft.endH||0} onChange={e=>setDraft(d=>({...d,endH:+e.target.value}))}/></label>
+                <label style={{fontSize:11,color:"var(--text2)",fontWeight:700}}>😴 מנוחה (שעות)<input type="number" min={0} max={24} style={inp} value={draft.restHours||0} onChange={e=>setDraft(d=>({...d,restHours:+e.target.value}))}/></label>
+                <label style={{fontSize:11,color:"var(--text2)",fontWeight:700}}>⭐ מס׳ מפקדים<input type="number" min={0} max={10} style={inp} value={draft.slots_commander||0} onChange={e=>setDraft(d=>({...d,slots_commander:+e.target.value}))}/></label>
+                <label style={{fontSize:11,color:"var(--text2)",fontWeight:700}}>🪖 מס׳ חיילים<input type="number" min={0} max={20} style={inp} value={draft.slots_soldiers||0} onChange={e=>setDraft(d=>({...d,slots_soldiers:+e.target.value}))}/></label>
+                <label style={{fontSize:11,color:"var(--text2)",fontWeight:700}}>📍 עמודה בתצוגה (1-6)<input type="number" min={1} max={6} style={inp} value={draft.col||1} onChange={e=>setDraft(d=>({...d,col:+e.target.value}))}/></label>
+              </div>
+              <div style={{borderTop:"1px solid var(--border)",paddingTop:14,marginTop:8}}>
+                <div style={{fontSize:13,fontWeight:700,marginBottom:8,color:"var(--accent)"}}>🎖️ תפקידים נדרשים (אופציונלי)</div>
+                <div style={{fontSize:11,color:"var(--text3)",marginBottom:10}}>אם תגדיר תפקידים כאן, יחליפו את החלוקה ל"מפקדים/חיילים"</div>
+                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  {(draft.roleSlots||[]).map((rs,i)=>(
+                    <div key={i} style={{display:"flex",gap:6,alignItems:"center",background:"var(--surface2)",padding:8,borderRadius:8}}>
+                      <select style={{...inp,marginTop:0,flex:2}} value={rs.role} onChange={e=>setDraft(d=>{const nrs=[...d.roleSlots];nrs[i]={...nrs[i],role:e.target.value};return {...d,roleSlots:nrs};})}>
+                        {availableRoles.map(r=><option key={r} value={r}>{r}</option>)}
+                      </select>
+                      <input type="number" min={1} max={20} style={{...inp,marginTop:0,flex:1,direction:"ltr"}} value={rs.count} onChange={e=>setDraft(d=>{const nrs=[...d.roleSlots];nrs[i]={...nrs[i],count:+e.target.value};return {...d,roleSlots:nrs};})}/>
+                      <button onClick={()=>setDraft(d=>({...d,roleSlots:d.roleSlots.filter((_,j)=>j!==i)}))} style={btn({color:"#ef5350",padding:"5px 10px",fontSize:14})}>✕</button>
+                    </div>
+                  ))}
+                  <button onClick={()=>setDraft(d=>({...d,roleSlots:[...(d.roleSlots||[]),{role:availableRoles[0]||"לוחם",count:1}]}))} style={btn({background:"var(--accent)22",color:"var(--accent)",fontWeight:700,padding:"7px 14px"})}>+ הוסף תפקיד</button>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:10,marginTop:18,paddingTop:14,borderTop:"1px solid var(--border)"}}>
+                <button onClick={saveAndClose} style={btn({background:"var(--green)",color:"#fff",flex:2,fontWeight:800,padding:"10px",fontSize:14})}>✓ שמור שינויים</button>
+                <button onClick={()=>setMissionEditModal(null)} style={btn({flex:1,padding:"10px",fontSize:14})}>ביטול</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+      {editReserve && (
+        <div onClick={()=>setEditReserve(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"var(--surface)",border:"3px solid #34c77b",borderRadius:16,padding:24,maxWidth:480,width:"100%",boxShadow:"0 0 60px rgba(52,199,123,0.4)"}}>
+            <div style={{fontSize:22,fontWeight:800,marginBottom:8,textAlign:"center"}}>💰 עריכת תקופת מילואים</div>
+            <div style={{fontSize:13,color:"var(--text2)",marginBottom:18,textAlign:"center",lineHeight:1.5}}>
+              קבע את תאריכי התחילה והסיום של תקופת המילואים. סכום המענק יחושב לפי הימים שעברו.
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              <label style={{fontSize:12,color:"var(--text2)",fontWeight:700}}>📅 תאריך התחלה
+                <input type="date" value={reserveSettings.startDate} onChange={e=>setReserveSettings(s=>({...s,startDate:e.target.value}))}
+                  style={{display:"block",width:"100%",marginTop:5,padding:"10px 12px",borderRadius:8,border:"1.5px solid var(--border2)",background:"var(--surface2)",color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:14}}/>
+              </label>
+              <label style={{fontSize:12,color:"var(--text2)",fontWeight:700}}>📅 תאריך סיום
+                <input type="date" value={reserveSettings.endDate} onChange={e=>setReserveSettings(s=>({...s,endDate:e.target.value}))}
+                  style={{display:"block",width:"100%",marginTop:5,padding:"10px 12px",borderRadius:8,border:"1.5px solid var(--border2)",background:"var(--surface2)",color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:14}}/>
+              </label>
+              <label style={{fontSize:12,color:"var(--text2)",fontWeight:700}}>💵 סכום יומי (₪)
+                <input type="number" min={0} value={reserveSettings.dailyAmount} onChange={e=>setReserveSettings(s=>({...s,dailyAmount:+e.target.value}))}
+                  style={{display:"block",width:"100%",marginTop:5,padding:"10px 12px",borderRadius:8,border:"1.5px solid var(--border2)",background:"var(--surface2)",color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:14,direction:"ltr"}}/>
+              </label>
+              {(() => {
+                const start = new Date(reserveSettings.startDate);
+                const end = new Date(reserveSettings.endDate);
+                if (isNaN(start) || isNaN(end)) return null;
+                const totalDays = Math.max(0, Math.round((end-start)/86400000) + 1);
+                const totalGrant = totalDays * reserveSettings.dailyAmount;
+                return (
+                  <div style={{background:"#34c77b22",border:"1.5px solid #34c77b",borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
+                    <div style={{fontSize:11,color:"#a5d6a7",fontWeight:700,marginBottom:4}}>סך הכל לתקופה</div>
+                    <div style={{fontSize:24,fontWeight:900,color:"#34c77b",direction:"ltr"}}>{totalGrant.toLocaleString('he-IL')} ₪</div>
+                    <div style={{fontSize:11,color:"#c8e6c9",marginTop:4}}>{totalDays} ימים · {reserveSettings.dailyAmount} ₪/יום</div>
+                  </div>
+                );
+              })()}
+            </div>
+            <div style={{display:"flex",gap:10,marginTop:18,justifyContent:"center"}}>
+              <button onClick={()=>setEditReserve(false)} style={{background:"#34c77b",color:"#fff",border:"none",borderRadius:9,padding:"10px 28px",fontFamily:"Heebo,sans-serif",fontSize:14,fontWeight:800,cursor:"pointer"}}>✓ סגור</button>
             </div>
           </div>
         </div>
