@@ -564,12 +564,17 @@ function DisplayCard({ mission, assignment, dayId, platoons }) {
   const isCompact = mission.id.startsWith("sg") || mission.id==="amada_a" || mission.id==="amada_b" || mission.id==="toren_rasp";
 
   // Helper: render full info for an assigned person (name + personal# + phone)
+  const formatHM = (h,m) => `${String(h).padStart(2,'0')}:${String(m||0).padStart(2,'0')}`;
   const renderPerson = (p, fallbackText, big) => {
     if (!p) return <span style={{fontStyle:"italic",opacity:0.7}}>{fallbackText}</span>;
     const det = findMemberDetails(p.name);
+    const rep = p.replacement;
     return (
       <>
-        <div style={{fontSize: big?13:12, fontWeight:800}}>{p.name}</div>
+        <div style={{fontSize: big?13:12, fontWeight:800}}>
+          {p.name}
+          {rep && <span style={{fontSize:big?10:9,fontWeight:600,opacity:0.85,marginRight:5}}>(עד {formatHM(rep.atHour,rep.atMinute)})</span>}
+        </div>
         {(det.personalNumber || det.phone) && (
           <div style={{fontSize:9,fontWeight:600,opacity:0.85,marginTop:1,letterSpacing:0.3,direction:'ltr'}}>
             {det.personalNumber && <span>{det.personalNumber}</span>}
@@ -577,6 +582,24 @@ function DisplayCard({ mission, assignment, dayId, platoons }) {
             {det.phone && <span>{det.phone}</span>}
           </div>
         )}
+        {rep && (() => {
+          const repDet = findMemberDetails(rep.name);
+          return (
+            <div style={{marginTop:4,padding:"3px 6px",background:"rgba(255,152,0,0.18)",borderRadius:5,borderTop:"1.5px dashed rgba(255,152,0,0.6)"}}>
+              <div style={{fontSize: big?12:11, fontWeight:800,color:"inherit"}}>
+                🔄 {rep.name}
+                <span style={{fontSize:big?10:9,fontWeight:600,opacity:0.85,marginRight:5}}>(מ-{formatHM(rep.atHour,rep.atMinute)})</span>
+              </div>
+              {(repDet.personalNumber || repDet.phone) && (
+                <div style={{fontSize:9,fontWeight:600,opacity:0.85,marginTop:1,letterSpacing:0.3,direction:'ltr'}}>
+                  {repDet.personalNumber && <span>{repDet.personalNumber}</span>}
+                  {repDet.personalNumber && repDet.phone && <span style={{margin:"0 4px"}}>•</span>}
+                  {repDet.phone && <span>{repDet.phone}</span>}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </>
     );
   };
@@ -672,15 +695,39 @@ function DisplayCard({ mission, assignment, dayId, platoons }) {
   );
 }
 
-function SlotBox({ label, assigned, onRemove, onClick, highlight, roleLabel, platoons }) {
+function SlotBox({ label, assigned, onRemove, onClick, onSwap, onRemoveSwap, highlight, roleLabel, platoons }) {
   const getStyle = (p) => getPlatoonStyleFromMap(platoons, p);
+  const formatT = (h,m) => `${String(h).padStart(2,'0')}:${String(m||0).padStart(2,'0')}`;
   return (
-    <div onClick={onClick} className={`sbox ${assigned?"filled":highlight?"hl":"empty"}`} style={assigned?getStyle(assigned.platoon):{}}>
-      <span>
-        {assigned?assigned.name:highlight?"לחץ לשיבוץ ←":label}
-        {roleLabel && <span style={{fontSize:10,marginRight:6,opacity:0.7}}>· {roleLabel}</span>}
-      </span>
-      {assigned && <button className="sbox-rm" onClick={e=>{e.stopPropagation();onRemove();}}>✕</button>}
+    <div className={`sbox ${assigned?"filled":highlight?"hl":"empty"}`} style={{...(assigned?getStyle(assigned.platoon):{}),flexDirection:assigned&&assigned.replacement?"column":"row",alignItems:assigned&&assigned.replacement?"stretch":"center",gap:assigned&&assigned.replacement?4:8}} onClick={!assigned ? onClick : undefined}>
+      {/* Primary slot */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,width:"100%"}}>
+        <span style={{flex:1}}>
+          {assigned ? (
+            <>
+              {assigned.name}
+              {assigned.replacement && <span style={{fontSize:10,marginRight:6,opacity:0.85,fontWeight:500}}>(עד {formatT(assigned.replacement.atHour,assigned.replacement.atMinute)})</span>}
+              {roleLabel && <span style={{fontSize:10,marginRight:6,opacity:0.7}}>· {roleLabel}</span>}
+            </>
+          ) : (highlight ? "לחץ לשיבוץ ←" : label)}
+          {!assigned && roleLabel && <span style={{fontSize:10,marginRight:6,opacity:0.7}}>· {roleLabel}</span>}
+        </span>
+        {assigned && onSwap && (
+          <button title="החלפת חייל באמצע משימה" onClick={e=>{e.stopPropagation();onSwap();}}
+            style={{background:"rgba(255,204,128,0.25)",border:"1px solid #ffcc80",borderRadius:5,color:"#ffcc80",cursor:"pointer",fontSize:10,padding:"2px 6px",fontFamily:"Heebo,sans-serif",fontWeight:700}}>🔄</button>
+        )}
+        {assigned && <button className="sbox-rm" onClick={e=>{e.stopPropagation();onRemove();}}>✕</button>}
+      </div>
+      {/* Replacement segment */}
+      {assigned && assigned.replacement && (
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,width:"100%",background:"rgba(0,0,0,0.18)",borderRadius:6,padding:"5px 9px",fontSize:13,...getStyle(assigned.replacement.platoon)}}>
+          <span style={{flex:1}}>
+            🔄 {assigned.replacement.name}
+            <span style={{fontSize:10,marginRight:6,opacity:0.85,fontWeight:500}}>(מ-{formatT(assigned.replacement.atHour,assigned.replacement.atMinute)})</span>
+          </span>
+          {onRemoveSwap && <button title="הסר החלפה" onClick={e=>{e.stopPropagation();onRemoveSwap();}} className="sbox-rm">✕</button>}
+        </div>
+      )}
     </div>
   );
 }
@@ -756,6 +803,8 @@ function App() {
   // Helper to apply loaded data to state
   const applyLoadedData = React.useCallback((stored) => {
     if (!stored) return;
+    // IMPORTANT: load customMissions FIRST so assignment lookup below can find them
+    const customMissionsFromStorage = stored.settings?.customMissions || [];
     if (stored.ass) {
       const base = freshAss();
       DAY_IDS.forEach(day => {
@@ -763,8 +812,16 @@ function App() {
         Object.keys(stored.ass[day]).forEach(mid => {
           const s = stored.ass[day][mid];
           if (!s) return;
-          const m = MISSION_DEFS.find(x=>x.id===mid);
-          if (!m) return;
+          // Look up mission in BOTH default and custom missions
+          const m = MISSION_DEFS.find(x=>x.id===mid) || customMissionsFromStorage.find(x=>x.id===mid);
+          if (!m) {
+            // Preserve unknown mission assignments as-is (might be loaded later)
+            base[day][mid] = {
+              commanders: Array.isArray(s.commanders) ? s.commanders : [],
+              soldiers: Array.isArray(s.soldiers) ? s.soldiers : [],
+            };
+            return;
+          }
           const ms = getMissionSlots(m);
           const normalize = (arr, size) => {
             if (!arr) return Array(size).fill(null);
@@ -976,6 +1033,8 @@ function App() {
   const [pendingMissionEdit, setPendingMissionEdit] = React.useState(null);
   // Inline mission edit modal (popup directly from display)
   const [missionEditModal, setMissionEditModal] = React.useState(null); // {missionId, draft}
+  // Mid-mission soldier swap modal
+  const [swapModal, setSwapModal] = React.useState(null); // {type, idx, current}
   // Reserve period edit modal
   const [editReserve, setEditReserve] = React.useState(false);
 
@@ -1131,6 +1190,26 @@ function App() {
   function removePerson(type,idx) {
     setAllAssAndSave(prev=>{const c=JSON.parse(JSON.stringify(prev));if(c[activeDay]&&c[activeDay][activeMission]&&c[activeDay][activeMission][type])c[activeDay][activeMission][type][idx]=null;return c;});
   }
+  function removeSwap(type, idx) {
+    setAllAssAndSave(prev => {
+      const c = JSON.parse(JSON.stringify(prev));
+      const slot = c[activeDay]?.[activeMission]?.[type]?.[idx];
+      if (slot && slot.replacement) {
+        delete slot.replacement;
+      }
+      return c;
+    });
+  }
+  function setSwap(type, idx, name, platoonKey, atHour, atMinute) {
+    setAllAssAndSave(prev => {
+      const c = JSON.parse(JSON.stringify(prev));
+      const slot = c[activeDay]?.[activeMission]?.[type]?.[idx];
+      if (slot) {
+        slot.replacement = { name, platoon: platoonKey, atHour: +atHour, atMinute: +atMinute };
+      }
+      return c;
+    });
+  }
   const aftarThisDay = aftarByDay[activeDay] || [];
   const total = allMembers.length;
   const assigned = assignedThisDay.size;
@@ -1284,7 +1363,9 @@ function App() {
                                     platoons={platoons}
                                     assigned={p} highlight={selPeople.length>0&&!p}
                                     onClick={()=>!p&&slotClick("soldiers",slotIdx)}
-                                    onRemove={()=>removePerson("soldiers",slotIdx)}/>
+                                    onRemove={()=>removePerson("soldiers",slotIdx)}
+                                    onSwap={()=>setSwapModal({type:"soldiers",idx:slotIdx,current:p,missionTime:{startH:effMission.startH,endH:effMission.endH}})}
+                                    onRemoveSwap={()=>removeSwap("soldiers",slotIdx)}/>
                                 );
                               })
                             )}
@@ -1300,7 +1381,9 @@ function App() {
                             {cmdArr.map((p,i)=>(
                               <SlotBox key={i} label="מפקד ריק" assigned={p} highlight={selPeople.length>0&&!p}
                                 platoons={platoons}
-                                onClick={()=>!p&&slotClick("commanders",i)} onRemove={()=>removePerson("commanders",i)}/>
+                                onClick={()=>!p&&slotClick("commanders",i)} onRemove={()=>removePerson("commanders",i)}
+                                onSwap={()=>setSwapModal({type:"commanders",idx:i,current:p,missionTime:{startH:effMission.startH,endH:effMission.endH}})}
+                                onRemoveSwap={()=>removeSwap("commanders",i)}/>
                             ))}
                           </div>
                         </div>
@@ -1312,7 +1395,9 @@ function App() {
                             {solArr.map((p,i)=>(
                               <SlotBox key={i} label="חייל ריק" assigned={p} highlight={selPeople.length>0&&!p}
                                 platoons={platoons}
-                                onClick={()=>!p&&slotClick("soldiers",i)} onRemove={()=>removePerson("soldiers",i)}/>
+                                onClick={()=>!p&&slotClick("soldiers",i)} onRemove={()=>removePerson("soldiers",i)}
+                                onSwap={()=>setSwapModal({type:"soldiers",idx:i,current:p,missionTime:{startH:effMission.startH,endH:effMission.endH}})}
+                                onRemoveSwap={()=>removeSwap("soldiers",i)}/>
                             ))}
                           </div>
                         </div>
@@ -2289,11 +2374,22 @@ function App() {
         }
       });
     });
-    // Build full attendance list
+    // Build full attendance list - exclude מפקדת פלוגה (pluga2) and מ"מ (platoon commanders)
+    const isExcludedFromParade = (platoonKey, platoon, roles) => {
+      // Exclude Company HQ entirely
+      if (platoonKey === 'pluga2') return true;
+      if (platoon.label && (platoon.label.includes('מפקדת פלוגה') || platoon.label.includes('מפקדת הפלוגה'))) return true;
+      // Exclude anyone with role מ"מ (platoon commander) regardless of platoon
+      if (roles && roles.some(r => r === 'מ"מ' || r === 'מ״מ' || r.includes('מ"מ') || r.includes('מ״מ'))) return true;
+      return false;
+    };
     const allRows = [];
     Object.entries(platoons).forEach(([k,p]) => {
       p.members.forEach(rawM => {
         const name = getMemberName(rawM);
+        const roles = getMemberRoles(rawM);
+        // Skip excluded members entirely from parade list
+        if (isExcludedFromParade(k, p, roles)) return;
         const status = getMemberStatus ? getMemberStatus(rawM) : 'active';
         const statusInfo = getStatusInfo ? getStatusInfo(status) : {label:'פעיל',color:'#34c77b',blocks:false};
         let category, reason, color;
@@ -2924,6 +3020,21 @@ function App() {
           </div>
         </div>
       )}
+      {swapModal && (() => {
+        const sH = swapModal.missionTime?.startH ?? 0;
+        const eH = swapModal.missionTime?.endH ?? 24;
+        // Default mid-time
+        const midH = Math.floor((sH + eH) / 2) % 24;
+        return <SwapModalContent
+          swapModal={swapModal}
+          defaultH={midH}
+          missionStartH={sH}
+          missionEndH={eH}
+          platoons={platoons}
+          onCancel={()=>setSwapModal(null)}
+          onConfirm={(name, platoonKey, h, m)=>{ setSwap(swapModal.type, swapModal.idx, name, platoonKey, h, m); setSwapModal(null); }}
+        />;
+      })()}
       {missionEditModal && (() => {
         const inp = {display:"block",width:"100%",marginTop:3,padding:"6px 10px",borderRadius:7,border:"1px solid var(--border2)",background:"var(--surface2)",color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:13};
         const btn = (extra={}) => ({background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text2)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:12,padding:"4px 10px",...extra});
@@ -3286,6 +3397,115 @@ function MemberEditor({ name, roles, blockedMissions, personalNumber, phone, sta
       <div style={{display:"flex",gap:5}}>
         <button onClick={save} style={btn({background:"var(--green)",color:"#fff",flex:1,fontWeight:700,fontSize:11})}>✓ שמור</button>
         <button onClick={onDone} style={btn({flex:1,fontSize:11})}>ביטול</button>
+      </div>
+    </div>
+  );
+}
+
+function SwapModalContent({ swapModal, defaultH, missionStartH, missionEndH, platoons, onCancel, onConfirm }) {
+  const [hour, setHour] = React.useState(defaultH || 0);
+  const [minute, setMinute] = React.useState(0);
+  const [selPick, setSelPick] = React.useState(null); // {name, platoon}
+  const cur = swapModal.current;
+  const sH = missionStartH ?? 0;
+  const eH = missionEndH ?? 24;
+  const fmt = (h) => `${String(h % 24).padStart(2,'0')}:00`;
+  const fmtTime = (h,m) => `${String(h).padStart(2,'0')}:${String(m||0).padStart(2,'0')}`;
+  // Generate suggestion times in 30-min increments within the mission window
+  const suggestions = [];
+  for (let t = (sH+1)*60; t < eH*60; t += 30) {
+    suggestions.push({h: Math.floor(t/60) % 24, m: t%60});
+  }
+  return (
+    <div onClick={onCancel} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.78)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"var(--surface)",border:"3px solid #ffcc80",borderRadius:16,padding:22,maxWidth:720,width:"100%",maxHeight:"88vh",overflow:"auto",boxShadow:"0 0 60px rgba(255,204,128,0.35)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,borderBottom:"2px solid var(--border)",paddingBottom:12}}>
+          <span style={{fontSize:30}}>🔄</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:18,fontWeight:800}}>החלפת חייל באמצע משימה</div>
+            <div style={{fontSize:12,color:"var(--text2)",marginTop:2}}>חייל נוכחי: <strong style={{color:"var(--text)"}}>{cur?.name}</strong> · המשימה: <strong>{fmt(sH)} - {fmt(eH)}</strong></div>
+          </div>
+          <button onClick={onCancel} style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text2)",cursor:"pointer",padding:"6px 14px",fontFamily:"Heebo,sans-serif",fontSize:13}}>✕ סגור</button>
+        </div>
+        {/* PROMINENT TIME PICKER */}
+        <div style={{background:"linear-gradient(135deg,#ff980022,#ffcc8033)",border:"2.5px solid #ff9800",borderRadius:12,padding:18,marginBottom:16}}>
+          <div style={{fontSize:15,fontWeight:800,color:"#ff9800",marginBottom:12,textAlign:"center",letterSpacing:0.5}}>⏰ באיזו שעה תתבצע ההחלפה?</div>
+          {/* Big time display */}
+          <div style={{textAlign:"center",marginBottom:14}}>
+            <div style={{display:"inline-block",background:"#ff9800",color:"#fff",borderRadius:14,padding:"10px 28px",fontSize:42,fontWeight:900,fontFamily:"Heebo,sans-serif",letterSpacing:2,direction:"ltr",boxShadow:"0 4px 12px rgba(255,152,0,0.4)"}}>
+              {String(hour).padStart(2,'0')}:{String(minute).padStart(2,'0')}
+            </div>
+          </div>
+          {/* Hour + minute inputs */}
+          <div style={{display:"flex",gap:12,alignItems:"center",justifyContent:"center",marginBottom:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:13,color:"var(--text)",fontWeight:700}}>שעה</span>
+              <button onClick={()=>setHour(h=>(h+23)%24)} style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:6,color:"var(--text)",cursor:"pointer",padding:"6px 10px",fontFamily:"Heebo,sans-serif",fontSize:16,fontWeight:800}}>−</button>
+              <input type="number" min={0} max={23} value={hour} onChange={e=>setHour(Math.max(0,Math.min(23,+e.target.value||0)))}
+                style={{width:72,padding:"10px",borderRadius:8,border:"2px solid #ff9800",background:"var(--surface)",color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:22,fontWeight:800,textAlign:"center",direction:"ltr"}}/>
+              <button onClick={()=>setHour(h=>(h+1)%24)} style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:6,color:"var(--text)",cursor:"pointer",padding:"6px 10px",fontFamily:"Heebo,sans-serif",fontSize:16,fontWeight:800}}>+</button>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:13,color:"var(--text)",fontWeight:700}}>דקות</span>
+              <button onClick={()=>setMinute(m=>(m-5+60)%60)} style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:6,color:"var(--text)",cursor:"pointer",padding:"6px 10px",fontFamily:"Heebo,sans-serif",fontSize:16,fontWeight:800}}>−5</button>
+              <input type="number" min={0} max={59} step={5} value={minute} onChange={e=>setMinute(Math.max(0,Math.min(59,+e.target.value||0)))}
+                style={{width:72,padding:"10px",borderRadius:8,border:"2px solid #ff9800",background:"var(--surface)",color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:22,fontWeight:800,textAlign:"center",direction:"ltr"}}/>
+              <button onClick={()=>setMinute(m=>(m+5)%60)} style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:6,color:"var(--text)",cursor:"pointer",padding:"6px 10px",fontFamily:"Heebo,sans-serif",fontSize:16,fontWeight:800}}>+5</button>
+            </div>
+          </div>
+          {/* Quick presets */}
+          {suggestions.length > 0 && (
+            <div style={{display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center",paddingTop:10,borderTop:"1px dashed rgba(255,152,0,0.4)"}}>
+              <span style={{fontSize:11,color:"var(--text2)",alignSelf:"center",marginLeft:6}}>זמנים מהירים:</span>
+              {suggestions.slice(0, 12).map((s,i) => {
+                const isSel = s.h === hour && s.m === minute;
+                return (
+                  <button key={i} onClick={()=>{setHour(s.h); setMinute(s.m);}}
+                    style={{background:isSel?"#ff9800":"var(--surface2)",border:`1.5px solid ${isSel?"#fff":"#ff9800"}`,borderRadius:6,color:isSel?"#fff":"#ffcc80",cursor:"pointer",padding:"4px 9px",fontFamily:"Heebo,sans-serif",fontSize:12,fontWeight:700,direction:"ltr"}}>
+                    {fmtTime(s.h,s.m)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <div style={{textAlign:"center",fontSize:12,color:"var(--text)",marginTop:12,background:"rgba(0,0,0,0.18)",padding:"8px 10px",borderRadius:7,lineHeight:1.5}}>
+            <strong style={{color:"#ffcc80"}}>{cur?.name}</strong> יסיים בשעה <strong style={{color:"#ffcc80",direction:"ltr",display:"inline-block"}}>{fmtTime(hour,minute)}</strong>
+            <br/>המחליף יחל בשעה <strong style={{color:"#ffcc80",direction:"ltr",display:"inline-block"}}>{fmtTime(hour,minute)}</strong>
+          </div>
+        </div>
+        <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>👤 בחר חייל מחליף</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,maxHeight:340,overflow:"auto",marginBottom:14}}>
+          {Object.entries(platoons).map(([k,p])=>p.members.length===0?null:(
+            <div key={k}>
+              <div style={{fontSize:12,fontWeight:700,color:p.color,marginBottom:5,padding:"3px 8px",background:p.color+"22",borderRadius:5,display:"inline-block"}}>{p.label}</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                {[...p.members].sort((a,b)=>{
+                  const na = typeof a==='string'?a:a.name;
+                  const nb = typeof b==='string'?b:b.name;
+                  return na.localeCompare(nb,'he');
+                }).map(rawM=>{
+                  const name = typeof rawM==='string'?rawM:rawM.name;
+                  const isSame = name === cur?.name;
+                  const isSel = selPick?.name === name;
+                  const style = getPlatoonStyleFromMap(platoons,k);
+                  return (
+                    <button key={name} disabled={isSame} onClick={()=>setSelPick({name,platoon:k})}
+                      style={{...style,border:isSel?"3px solid #fff":"2px solid transparent",borderRadius:7,padding:"6px 12px",fontFamily:"Heebo,sans-serif",fontSize:13,fontWeight:700,cursor:isSame?"not-allowed":"pointer",opacity:isSame?0.3:1,boxShadow:isSel?"0 0 8px rgba(255,255,255,0.5)":"none"}}>
+                      {name}{isSame && " (נוכחי)"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:10,paddingTop:14,borderTop:"1px solid var(--border)"}}>
+          <button onClick={()=>{
+            if (!selPick) { alert('בחר חייל מחליף'); return; }
+            onConfirm(selPick.name, selPick.platoon, hour, minute);
+          }} style={{background:"#ff9800",color:"#fff",border:"none",borderRadius:9,padding:"10px",flex:2,fontWeight:800,cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:14}}>✓ אישור החלפה</button>
+          <button onClick={onCancel} style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:9,padding:"10px",flex:1,color:"var(--text2)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:14}}>ביטול</button>
+        </div>
       </div>
     </div>
   );
