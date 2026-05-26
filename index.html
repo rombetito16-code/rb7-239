@@ -1437,7 +1437,7 @@ function App() {
                       const cur = {...baseSettings, ...dayOv};
                       setMissionEditModal({missionId: m.id, mission: m, draft: {...cur, roleSlots: cur.roleSlots || []}});
                     }} title="ערוך הגדרות משימה"
-                      style={{position:"absolute",top:6,left:6,zIndex:5,background:"rgba(79,156,249,0.85)",border:"none",borderRadius:6,color:"#fff",cursor:"pointer",padding:"3px 8px",fontSize:11,fontWeight:700,fontFamily:"Heebo,sans-serif"}}>✏️ ערוך</button>
+                      style={{position:"absolute",top:3,left:3,zIndex:5,background:"rgba(79,156,249,0.75)",border:"none",borderRadius:4,color:"#fff",cursor:"pointer",padding:"1px 4px",fontSize:9,fontWeight:700,fontFamily:"Heebo,sans-serif",lineHeight:"1.3",opacity:0.8}}>✏️</button>
                     <SafeDisplayCard mission={m} assignment={dayAss[m.id]} dayId={activeDay} platoons={platoons}/>
                   </div>
                 ))}
