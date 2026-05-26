@@ -559,10 +559,10 @@ async function exportDisplayToPDF(dayLabel, dateOnly) {
       }
     });
     // === EXPORT AS PNG IMAGE ===
-    const imgData = canvas.toDataURL('image/png');
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
     const safeName = (dayLabel||'').replace(/[\/\\:]/g,'-');
     const link = document.createElement('a');
-    link.download = `שבצק_${safeName}.png`;
+    link.download = `שבצק_${safeName}.jpeg`;
     link.href = imgData;
     document.body.appendChild(link);
     link.click();
@@ -646,7 +646,7 @@ async function exportDisplayToPDF(dayLabel, dateOnly) {
     pdf.save(`\u05e9\u05d1\u05e6\u05e7_${dayLabel.replace(/[\/\\:]/g,'-')}.pdf`);
   } catch (e) {
     console.error(e);
-    alert('שגיאה בייצוא תמונה: ' + e.message);
+    alert('שגיאה בייצוא PDF: ' + e.message);
   } finally {
     el.style.zoom = prevZoom;
     const s = document.getElementById('__pdf_print_style');
@@ -2909,7 +2909,7 @@ function App() {
             {bypassConstraints?"🔓":"🔒"}
           </button>
         </div>
-        {view==="display" && <button onClick={()=>exportDisplayToPDF(`${activeDayObj?.label}_${activeDayObj?.date}`, activeDayObj?.date)} style={{background:"#ef535022",border:"1px solid #ef5350",borderRadius:7,color:"#ef5350",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"4px 12px"}}>🖼️ ייצוא תמונה</button>}
+        {view==="display" && <button onClick={()=>exportDisplayToPDF(`${activeDayObj?.label}_${activeDayObj?.date}`, activeDayObj?.date)} style={{background:"#ef535022",border:"1px solid #ef5350",borderRadius:7,color:"#ef5350",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"4px 12px"}}>📄 ייצוא PDF</button>}
         {(view==="display"||view==="builder") && <button onClick={()=>{ if(confirm(`לבצע שיבוץ אוטומטי ליום ${activeDayObj?.date}? פעולה זו תמלא תאים ריקים בלבד.`)) autoAssignDay(); }} style={{background:"#34c77b22",border:"1px solid var(--green)",borderRadius:7,color:"var(--green)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"4px 12px",whiteSpace:"nowrap"}}>🪄 שבצ"ק אוטומטי</button>}
         <button onClick={()=>{
           const dlabel = activeDayObj ? `${activeDayObj.label} ${activeDayObj.date}` : 'היום';
