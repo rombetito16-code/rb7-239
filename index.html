@@ -2290,38 +2290,87 @@ const MISSION_DEFS = [
 
 // === HELPERS ===
 // Available member statuses: 'active' = normal, others = unavailable (blocked from missions + parade)
-// Military motivational quotes - rotate daily
+// Motivational quotes - rotate daily
 const MOTIVATIONAL_QUOTES = [
-  "אחרי הניצחון, חזקו את הקסדה.",
-  "אין מנצחים בלי אחווה.",
-  "הקושי של היום הוא הכוח של מחר.",
-  "מי שמוותר אף פעם, אף פעם לא ניצח.",
-  "כל יום של שירות הוא תרומה לעם.",
-  "האומץ הוא לא היעדר פחד, אלא לפעול למרות הפחד.",
-  "אחד למען כולם, כולם למען אחד.",
-  "המשמעת היא הגשר בין מטרות להישגים.",
-  "אנחנו לא לבד - אנחנו עם.",
-  "כל חייל הוא חוליה בשרשרת הברזל.",
-  "בשבילם — נמשיך לעמוד חזקים.",
-  "מילואים זה לא רק חובה, זה זכות.",
-  "מי שמוכן להגן הוא חופשי באמת.",
-  "תפקידנו הוא לא רק לשרת אלא להעניק תקווה.",
-  "הצוות הוא הבית השני - שמרו אחד על השני.",
-  "שום נצח לא מגיע בלי הקרבה.",
-  "הגיבורים האמיתיים לובשים מדים פשוטים.",
-  "כל שעה כאן היא יום של שקט בבית.",
-  "מהזיעה היום צומחת הגאווה מחר.",
-  "אנחנו לא רק שומרים - אנחנו בונים עתיד.",
-  "הקושי חולף, הגאווה נשארת.",
-  "תפקידנו - לחזור הביתה עם הראש מורם.",
-  "ביחד נצליח, ביחד ננצח.",
-  "ההיסטוריה נכתבת על ידי אלה שלא מוותרים.",
-  "כל מבצע מתחיל ברגע אחד של תעוזה.",
-  "הביטחון בא מהאחווה - לא מהנשק.",
-  "אחים לנשק - אחים לחיים.",
-  "מי שמשרת את אחיו - משרת את עצמו.",
-  "כל יום שעובר הוא צעד קרוב יותר הביתה.",
-  "הרוח חזקה יותר מהגוף - תזכרו את זה.",
+  "האדם שמזיז הרים, התחיל בלסחוב אבנים קטנות — קונפציוס",
+  "מי שלא מוכן לטעות, לעולם לא יגיע למשהו מקורי — קן רובינסון",
+  "אני מאמין גדול במזל, ושמתי לב שככל שאני עובד קשה יותר, יש לי יותר מזל — תומס ג'פרסון",
+  "אדם חייב להיות מוכן לוותר על מי שהוא, כדי להפוך למי שהוא יכול להיות — איינשטיין",
+  "אנשים אומרים שמוטיבציה לא מחזיקה הרבה זמן. גם מקלחת לא, לכן אנו ממליצים אותה על בסיס יומי — זיג זיגלר",
+  "כשהם אומרים לך שאתה לא יכול, הם מראים לך את הגבולות שלהם, לא שלך — קווין קינו",
+  "אנשים מסוימים ישנאו אותך על היותך שונה, אבל בפנים הם מייחלים שיהיה להם אומץ לעשות אותו הדבר — קווין הארט",
+  "אתה תמיד גדול כגודל העניין שאתה משרת ואתה נהייה קטן אם אתה משרת רק את עצמך — שמעון פרס",
+  "עדיף לגמגם בקול רם, מאשר לדבר רהוט רק במחשבות — שחר כהן",
+  "אומץ הוא לא תמיד שאגה, לפעמים אומץ הוא קול חלוש בסוף היום שאומר - מחר אנסה פעם נוספת — מרי אן ראדמאכר",
+  "הדבר היחיד שהוא יותר גרוע מלהתחיל ולהיכשל, הוא לא להתחיל בכלל — סת' גודין",
+  "אם תמיד תנסו להיות נורמלים, לעולם לא תדעו כמה מדהימים אתם יכולים להיות — מאיה אנג'לו",
+  "כשאתה יודע מה המטרה שלך, העולם הופך לספרייה שמספקת לך הידע הדרוש — קובי בריאנט",
+  "את מה שהזחל מכנה הסוף, שאר העולם מכנה פרפר — אנונימי",
+  "אדם פסימי רואה את הקושי בכל הזדמנות, אדם אופטימי רואה הזדמנות בכל קושי — ווינסטון צ'רצ'יל",
+  "הרמה שבה אנשים מכבדים אותך היא פונקציה של כמה אתה מכבד את עצמך — שחר כהן",
+  "לו היו לי 6 שעות לכרות עץ, הייתי מבלה את ה-4 הראשונות בלהשחיז את הגרזן — אברהם לינקולן",
+  "החולשה הגדולה ביותר שלנו היא הותרנות, הדרך הבטוחה ביותר להצליח היא תמיד להמשיך ולנסות פעם אחת נוספת — תומס אלווס אדיסון",
+  "האדם שאומר שאי אפשר לעשות את זה, לא צריך להפריע לבן-אדם שעושה את זה — אנונימי",
+  "ראשית הם מתעלמים ממך, אח\"כ מגכחים עליך, אח\"כ תוקפים אותך ובסוף בונים פסלים בדמותך — מיוחס לגנדי",
+  "שום דבר לא יכול לעצור את האיש עם הגישה הנכונה מלהשיג את מטרותיו. שום דבר עלי אדמות לא יכול לעזור לאדם עם הגישה הלא נכונה — תומס ג'פרסון",
+  "הבעיה של רובינו היא לא שאנחנו מכוונים גבוה מידי ונכשלים, אלא שאנחנו מכוונים נמוך מידי ומצליחים — קן רובינסון",
+  "כשנדמה שהכול פועל נגדכם – תזכרו שמטוס ממריא נגד הרוח, ולא לצדה — אנונימי",
+  "הפחד העמוק ביותר שלנו הוא לא שמא אנחנו חלשים מדי. הפחד העמוק ביותר שלנו הוא שאנחנו בעלי עוצמה שמעל לכל שיעור — מריאן ויליאמסון",
+  "כל החושך בעולם לא יכול לכבות את האור של נר בודד — אנונימי",
+  "מזל הוא הזדמנות שפוגשת מוכנות — סנקה",
+  "אל תחפשו פתרון קסם, הקסם הוא בתרגול היומיומי של היסודות — שחר כהן",
+  "תרדפו אחרי החזון שלכם, לא אחרי הכסף ובסוף הכסף ירדוף אחריכם — טוני שיי",
+  "אם אתה קורא רק את הספרים שכולם קוראים, אתה יכול לחשוב רק כמו שכולם חושבים — הרוקי מורקמי",
+  "אנשים חושבים שמיקוד פירושו להגיד כן למה שאתה צריך לעשות. כשלמעשה מיקוד הוא להגיד לא למאות רעיונות טובים אחרים. עליך לבחור בקפידה — סטיב ג'ובס",
+  "אל תתן למה שאתה לא יכול לעשות להפריע למה שאתה כן יכול לעשות — ג'ון רוברט וודן",
+  "החיים הם 10 אחוז מה שקורה לך ו-90 אחוז איך שאתה מגיב לאירועים — צ'רלס סוידול",
+  "לאכול בריא זה יקר, אבל להיות חולה יקר יותר — ד\"ר גיל יוסף שחר",
+  "האנשים שמחפשים הכי הרבה אישור חיצוני הם אלו שמקבלים הכי מעט, ואלו שהכי פחות זקוקים לאישור מקבלים ממנו הכי הרבה — ווין דייר",
+  "תמיד יש דרך, עבור מי שמחויב — טוני רובינס",
+  "אם אתה רוצה להיות הטוב ביותר, אתה צריך להיות מוכן לעשות דברים שאנשים אחרים לא מוכנים לעשות — מייקל פלפס",
+  "רק מי שלוקח סיכון והולך רחוק, מגלה עד כמה רחוק הוא יכול להגיע — אלברט איינשטיין",
+  "פספסתי יותר מ-9,000 זריקות בקריירה שלי. הפסדתי כמעט 300 משחקים. 26 פעמים סמכו עלי לקחת את הזריקה המכרעת ופספסתי. נכשלתי שוב ושוב ושוב בחיים שלי. וזוהי הסיבה שהצלחתי — מייקל ג'ורדן",
+  "כשהכל חשוך שקול את האפשרות שאת/ה האור — אנונימי",
+  "השמיים הם לא הגבול… אני הגבול — ט.פ הודג'",
+  "אל תחפשו עיסוק שאתם אוהבים, חפשו חזון שמרגש אתכם, כשתמצאו אותו גם הפעולות המשעממות ביותר יהפכו למלהיבות — שחר כהן",
+  "לא נכשלתי, הצלחתי למצוא 10,000 דרכים איך זה לא עובד — תומס אלווא אדיסון",
+  "אם יש לך משימה ואתה אומר אני יכול לעשות זאת, זו לא המשימה שאתה רוצה. חפש את המשימה שנראית בלתי אפשרית, כי היא זאת שדוחפת אותך להתפתח — קובי בריאנט",
+  "הצלחה היא היכולת לעבור מכישלון לכישלון מבלי לאבד את ההתלהבות — וינסטון צ'רצ'יל",
+  "כשאדם מוותר על עקרונותיו כדי לזכות בהערכת הסביבה, באותו הרגע הוא מוותר גם על הערכתו העצמית — שחר כהן",
+  "החלומות שלך לא צריכים להיות גדולים, הם צריכים להיות שלך — גרי וי",
+  "האמיצים אולי לא יחיו לנצח, אבל הזהירים לא חיים בכלל — ריצ'רד ברנסון",
+  "אל תתנו לרעש של דעות של אחרים למנוע מהקול הפנימי שלכם להישמע — סטיב ג'ובס",
+  "זה לא משנה כמה לאט אתה הולך, כל עוד אתה לא עוצר — קונפציוס",
+  "מכשולים הם הדברים המפחידים שאתה רואה כשאתה מוריד את העיניים מהמטרה שלך — הנרי פורד",
+  "אל תחכו למחלה כדי לבחור את הבחירות שנכונות לכם — מירית הררי",
+  "התהילה הגדולה ביותר שלנו אינה בלעולם לא ליפול, אלא בלקום בכל פעם שאנו נופלים — קונפציוס",
+  "אל תפחד לקפוץ; אי אפשר לחצות תהום בשני צעדים — דייוויד לויד גורג'",
+  "תיהיה השינוי שאתה מייחל לראות בעולם — מהטמה גנדי",
+  "אם אתה לא יכול, אז אתה חייב, ואם אתה חייב אתה יכול, זה מה שנקרא להעלות את הסטנדרטים — טוני רובינס",
+  "להחליט מה לא לעשות, חשוב באותה מידה כמו להחליט מה כן לעשות — סטיב ג'ובס",
+  "רוצים לדעת על מה אתם חושבים רוב הזמן? הסתכלו על התוצאות שאתם מקבלים, זה יספר לכם מה קורה בפנים — בוב פרוקטור",
+  "ברגע שאדם הציב לעצמו מטרות וכתב אותן, הוא הגדיל את אחוזי ההצלחה שלו פי 10 — בריאן טרייסי",
+  "דמיון חשוב יותר מידע, ידע הוא מוגבל, אך דמיון חובק עולמות — אלברט איינשטיין",
+  "הצבת מטרות זה החלק הראשון בלהפוך את הבלתי נראה לנראה — טוני רובינס",
+  "אם אתה יכול לחלום את זה, אתה יכול לעשות את זה — וולט דיסני",
+  "אין הצלחתי או נכשלתי - יש שיחקתי — יובל אברמוביץ",
+  "כשאתה נכשל בלהתכונן, אתה מתכונן לכישלון — בנג'מין פרנקלין",
+  "כל פעם כשפגשתי אדם עם כישרון מולד מעורר קנאה, גיליתי שהכישרון הוא בעצם התמדה — שחר כהן",
+  "אני לא מפחד מאדם שהתאמן על 10,000 בעיטות פעם אחת, אני מפחד ממי שהתאמן על בעיטה אחת 10,000 פעמים — ברוס לי",
+  "אם אתה נולד עני זאת לא אשמתך אבל אם אתה מת עני זאת אשמתך — ביל גייטס",
+  "השאלה היא לא כמה אנחנו נותנים, אלא כמה אהבה אנחנו מכניסים אל תוך הנתינה שלנו — האם תרזה",
+  "לעולם לא תוכל לחצות את האוקיינוס עד שיהיה לך את האומץ לאבד את מראה החוף — קריסטופר קולומבוס",
+  "הצלחה היא מתכון, אם יש לך את כל הרכיבים, אתה תצליח, מאוד פשוט — בריאן טרייסי",
+  "יש אנשים שחיים בעולם של חלומות, יש כאלה שמתמודדים עם המציאות; ויש את אלו שהופכים את האחד לשני — דאגלס אוורט",
+  "נטוורקינג דומה לתזונה וכושר: אנחנו יודעים מה לעשות, החלק הקשה הוא להעמיד את זה בראש סדר העדיפויות — הרמיניה איבארה",
+  "ככל שאדם בטוח יותר בעצמו, כך פוחת אצלו הצורך להוכיח — שחר כהן",
+  "אם אתה לא יכול לעשות דברים גדולים, תעשה דברים קטנים בדרך גדולה — נפוליאון היל",
+  "כל אמת עוברת דרך שלושה שלבים. ראשית, לועגים לה; אחר כך, מתנגדים לה; ולבסוף - מקבלים אותה כמובנת מאליה — ארתור שופנהאואר",
+  "אם אתם חסרי ביטחון, נחשו מה, גם שאר העולם. אל תעריכו יותר מידי את התחרות ופחות מידי את עצמכם, יש בכם יותר ממה שאתם חושבים — טי הארב האקר",
+  "אני יכול לקבל כישלון, כולם נכשלים לפעמים, אבל אני לא יכול לקבל לא לנסות — מייקל ג'ורדן",
+  "לעולם אל תגביל את עצמך בגלל דמיונם המוגבל של אחרים; לעולם אל תגביל אחרים בגלל דמיונך המוגבל שלך — מיי ג'מיסון",
+  "העתיד שייך לאלו שמאמינים ביופי של החלומות שלהם — אלנור רוזוולט",
+  "אל תלך לאן שהדרך מובילה, במקום זאת תלך איפה שאין דרך ותשאיר מאחוריך אחת — ראלף וולדו אמרסון",
 ];
 
 const MEMBER_STATUSES = [
@@ -3062,7 +3111,7 @@ function App() {
       const nextDayIdx = DAY_IDS.indexOf(activeDay) + 1;
       const nextAftar = new Set(nextDayIdx<DAY_IDS.length ? (aftarByDay[DAY_IDS[nextDayIdx]]||[]) : []);
       const allCands = Object.entries(platoons).flatMap(([k,p]) =>
-        p.members.map(rawM => {
+        p.members.filter(rawM => (getMemberStatus ? getMemberStatus(rawM) : 'active') !== 'absent').map(rawM => {
           const status = getMemberStatus ? getMemberStatus(rawM) : 'active';
           return {
             name: getMemberName(rawM),
@@ -3504,6 +3553,7 @@ function App() {
                     const memberBlocked = getMemberBlocked(rawMember);
                     const missionCount = missionCountMap[name] || 0;
                     const status = getMemberStatus(rawMember);
+                    if (status === 'absent') return null; // מוסתר לחלוטין עד שיוחזר לפעיל
                     const statusInfo = getStatusInfo(status);
                     const isStatusBlk = statusInfo.blocks;
                     const isAss=assignedThisDay.has(name), isSel=selPeople.some(p=>p.name===name);
@@ -3872,7 +3922,7 @@ function App() {
                 {Object.entries(platoons).map(([k,pp])=>pp.members.length===0?null:(
                   <div key={k} style={{marginBottom:12}}>
                     <div style={{fontSize:13,fontWeight:700,color:pp.color,marginBottom:6,padding:"4px 10px",background:pp.color+"22",borderRadius:6,display:"inline-block"}}>
-                      {pp.label} ({pp.members.length})
+                      {pp.label} ({pp.members.filter(m => getMemberStatus(m) !== 'absent').length})
                     </div>
                     <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
                       {sortMembersByName(pp.members).map(rawM=>{
@@ -4434,6 +4484,7 @@ function App() {
         if (isHiddenFromParade(k, p, roles)) return;
         // בדיקות
         const status = getMemberStatus ? getMemberStatus(rawM) : 'active';
+        if (status === 'absent') return; // לא נוכח = לא קיים
         const statusInfo = getStatusInfo ? getStatusInfo(status) : {blocks:false,label:'פעיל',color:'#34c77b'};
         let reason = null, reasonColor = '#e67e22';
         if (statusInfo.blocks) { reason = statusInfo.label; reasonColor = statusInfo.color; }
@@ -4630,6 +4681,259 @@ function App() {
   }
 
   // ═══ MEMBERS VIEW ═══
+  function DochView() {
+    const PLATOON_GROUPS = [
+      { keys:["cmd1","soldiers1"], label:"מחלקה 1" },
+      { keys:["cmd2","soldiers2"], label:"מחלקה 2" },
+      { keys:["cmd3","soldiers3"], label:"מחלקה 3" },
+      { keys:["pluga"],            label:"מסופחים" },
+      { keys:["pluga2"],           label:"מפקדת פלוגה" },
+    ];
+
+    const dayIdx   = DAY_IDS.indexOf(activeDay);
+    const prevDay  = dayIdx > 0 ? DAY_IDS[dayIdx - 1] : null;
+    const nextDay  = dayIdx < DAY_IDS.length - 1 ? DAY_IDS[dayIdx + 1] : null;
+    const homeToday = new Set(aftarByDay[activeDay] || []);
+    const homePrev  = new Set(prevDay ? (aftarByDay[prevDay]  || []) : []);
+    const homeNext  = new Set(nextDay ? (aftarByDay[nextDay] || []) : []);
+
+    const activeDayObj = DAYS.find(d => d.id === activeDay);
+    const dateLabel = activeDayObj ? `${activeDayObj.label} ${activeDayObj.date}` : activeDay;
+
+    // Determine per-soldier status label
+    function getSoldierStatus(name, rawMember) {
+      const memberStatus = getMemberStatus(rawMember);
+      // Non-active statuses override location
+      if (memberStatus === 'pitzul')   return 'פיצול';
+      if (memberStatus === 'gimelim')  return 'גימלים';
+      if (memberStatus === 'sick')     return 'חולה';
+      if (memberStatus === 'course')   return 'קורס';
+      if (memberStatus === 'arrest')   return 'כלא';
+      if (memberStatus === 'abroad')   return 'חול';
+      if (memberStatus === 'absent')   return 'לא נוכח';
+      // Location-based
+      if (homeToday.has(name) && !homePrev.has(name))   return 'יוצאים'; // יום ראשון בבית = יצא היום
+      if (!homeToday.has(name) && homePrev.has(name))   return 'בדרך';   // יום אחרי האחרון בבית = חוזר היום
+      if (homeToday.has(name))                          return 'בבית';   // ימי ביניים
+      return 'נוכח';
+    }
+
+    function buildGroupText(group) {
+      const members = [];
+      group.keys.forEach(k => {
+        const p = platoons[k];
+        if (!p) return;
+        p.members.forEach(rawM => {
+          const name = typeof rawM === 'string' ? rawM : rawM.name;
+          const st = getMemberStatus(rawM);
+          if (st === 'absent') return; // לא נוכח = לא קיים
+          members.push({ name, rawM });
+        });
+      });
+      if (members.length === 0) return null;
+
+      const statusMap = {};
+      members.forEach(({ name, rawM }) => {
+        statusMap[name] = getSoldierStatus(name, rawM);
+      });
+
+      const mileia   = members.length;
+      const nochachim= members.filter(({name}) => statusMap[name]==='נוכח').length;
+      const baBait   = members.filter(({name}) => statusMap[name]==='בבית').length;
+      const baDerech = members.filter(({name}) => statusMap[name]==='בדרך').length;
+      const yotzim   = members.filter(({name}) => statusMap[name]==='יוצאים').length;
+      const pitzul   = members.filter(({name}) => statusMap[name]==='פיצול').length;
+      const other    = mileia - nochachim - baBait - baDerech - yotzim - pitzul;
+
+      let lines = [];
+      lines.push(`דוח 1 ${group.label} ${dateLabel}`);
+      lines.push(`-מליאה: ${mileia}`);
+      lines.push(`-נוכחים: ${nochachim}`);
+      if (baDerech > 0) lines.push(`-בדרך: ${baDerech}`);
+      if (yotzim   > 0) lines.push(`-יוצאים: ${yotzim}`);
+      if (baBait   > 0) lines.push(`-בבית: ${baBait}`);
+      if (pitzul   > 0) lines.push(`-פיצול: ${pitzul}`);
+      if (other    > 0) lines.push(`-אחר: ${other}`);
+      lines.push('');
+      members.forEach(({ name }) => {
+        lines.push(`${name}-${statusMap[name]}`);
+      });
+      return { text: lines.join('\n'), mileia, nochachim, baBait, baDerech, yotzim, pitzul, members, statusMap };
+    }
+
+    const groups = PLATOON_GROUPS.map(g => ({ ...g, data: buildGroupText(g) })).filter(g => g.data);
+
+    const statusColor = {
+      'נוכח':  '#34c77b',
+      'בבית':  '#4db6e8',
+      'בדרך':  '#ff9800',
+      'יוצאים':  '#ce93d8',
+      'פיצול': '#ab47bc',
+      'גימלים':'#ff9800',
+      'חולה':  '#f06292',
+      'קורס':  '#7e57c2',
+      'כלא':   '#795548',
+      'חול':   '#26c6da',
+      'לא נוכח':'#ef5350',
+    };
+
+    const [copied, setCopied] = React.useState(null);
+    function copyText(idx, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopied(idx);
+        setTimeout(() => setCopied(null), 2000);
+      }).catch(() => {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        setCopied(idx);
+        setTimeout(() => setCopied(null), 2000);
+      });
+    }
+
+    const totals = groups.reduce((acc, g) => {
+      const d = g.data;
+      acc.mileia    += d.mileia;
+      acc.nochachim += d.nochachim;
+      acc.baBait    += d.baBait;
+      acc.baDerech  += d.baDerech;
+      acc.yotzim    += d.yotzim;
+      acc.pitzul    += d.pitzul;
+      return acc;
+    }, { mileia:0, nochachim:0, baBait:0, baDerech:0, yotzim:0, pitzul:0 });
+
+    const summaryText = [
+      `סיכום פלוגתי — ${dateLabel}`,
+      `מליאה: ${totals.mileia}`,
+      `נוכחים: ${totals.nochachim}`,
+      totals.baDerech > 0 ? `בדרך: ${totals.baDerech}` : null,
+      totals.yotzim   > 0 ? `יוצאים: ${totals.yotzim}` : null,
+      totals.baBait   > 0 ? `בבית: ${totals.baBait}` : null,
+      totals.pitzul   > 0 ? `פיצול: ${totals.pitzul}` : null,
+    ].filter(Boolean).join('\n');
+
+    const allText = summaryText + '\n\n' + groups.map(g => g.data.text).join('\n\n---\n\n');
+
+    return (
+      <div style={{padding:14,maxWidth:860,margin:"0 auto"}}>
+        {/* Header + copy-all */}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+          <div style={{fontSize:22,fontWeight:900,color:"var(--text)",flex:1}}>📋 דוח 1 — {dateLabel}</div>
+          <button onClick={()=>copyText('all', allText)}
+            style={{background:copied==='all'?"#34c77b22":"var(--surface2)",border:`1px solid ${copied==='all'?"#34c77b":"var(--border2)"}`,
+              borderRadius:8,color:copied==='all'?"#34c77b":"var(--text2)",cursor:"pointer",fontFamily:"Heebo,sans-serif",
+              fontSize:12,fontWeight:700,padding:"6px 14px",whiteSpace:"nowrap"}}>
+            {copied==='all' ? '✓ הועתק!' : '📋 העתק הכל לוואטסאפ'}
+          </button>
+        </div>
+
+        {/* ── פלוגתי סיכום ── */}
+        <div style={{background:"var(--surface)",border:"2px solid var(--border2)",borderRadius:14,padding:"14px 16px",marginBottom:18}}>
+          <div style={{fontWeight:900,fontSize:14,color:"var(--text3)",marginBottom:12,letterSpacing:.4}}>סיכום פלוגתי</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:8}}>
+            {[
+              {l:"מליאה",  v:totals.mileia,    c:"#e8eaf6", icon:"👥"},
+              {l:"נוכחים", v:totals.nochachim, c:"#34c77b", icon:"✅"},
+              {l:"בבית",   v:totals.baBait,    c:"#4db6e8", icon:"🏠"},
+              {l:"בדרך",   v:totals.baDerech,  c:"#ff9800", icon:"🚌"},
+              {l:"יוצאים", v:totals.yotzim,    c:"#ce93d8", icon:"🎒"},
+              {l:"פיצול",  v:totals.pitzul,    c:"#ab47bc", icon:"🔀"},
+            ].map(({l,v,c,icon})=>(
+              <div key={l} style={{textAlign:"center",background:v>0?c+"11":"rgba(0,0,0,0.15)",
+                border:`1.5px solid ${v>0?c+"44":"var(--border)"}`,borderRadius:10,padding:"10px 6px"}}>
+                <div style={{fontSize:18,marginBottom:2}}>{icon}</div>
+                <div style={{fontSize:26,fontWeight:900,color:v>0?c:"var(--text3)",lineHeight:1}}>{v}</div>
+                <div style={{fontSize:10,color:"var(--text3)",marginTop:3,fontWeight:700}}>{l}</div>
+              </div>
+            ))}
+          </div>
+          {/* progress bar: נוכחים / מליאה */}
+          {totals.mileia > 0 && (
+            <div style={{marginTop:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"var(--text3)",marginBottom:4}}>
+                <span>נוכחות</span>
+                <span style={{fontWeight:700,color:"#34c77b"}}>{Math.round(totals.nochachim/totals.mileia*100)}%</span>
+              </div>
+              <div style={{background:"var(--surface2)",borderRadius:99,height:8,overflow:"hidden"}}>
+                <div style={{width:`${totals.nochachim/totals.mileia*100}%`,background:"#34c77b",height:"100%",borderRadius:99,transition:"width .4s"}}/>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {groups.map((g, gi) => {
+          const { data } = g;
+          return (
+            <div key={gi} style={{background:"var(--surface)",border:"1.5px solid var(--border)",borderRadius:12,marginBottom:14,overflow:"hidden"}}>
+              {/* Group header */}
+              <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",
+                background:"var(--surface2)",borderBottom:"1px solid var(--border)"}}>
+                <div style={{fontWeight:900,fontSize:15,flex:1,color:"var(--text)"}}>
+                  {g.label}
+                </div>
+                {/* Mini stats */}
+                {[
+                  {l:"מליאה", v:data.mileia,   c:"#e8eaf6"},
+                  {l:"נוכחים",v:data.nochachim,c:"#34c77b"},
+                  {l:"בבית",  v:data.baBait,   c:"#4db6e8"},
+                  {l:"בדרך",  v:data.baDerech, c:"#ff9800"},
+                  {l:"יוצאים",v:data.yotzim,   c:"#ce93d8"},
+                  {l:"פיצול", v:data.pitzul,   c:"#ab47bc"},
+                ].filter(x=>x.v>0).map(x=>(
+                  <div key={x.l} style={{textAlign:"center",minWidth:44}}>
+                    <div style={{fontSize:16,fontWeight:900,color:x.c}}>{x.v}</div>
+                    <div style={{fontSize:9,color:"var(--text3)",fontWeight:700}}>{x.l}</div>
+                  </div>
+                ))}
+                <button onClick={()=>copyText(gi, data.text)}
+                  style={{background:copied===gi?"#34c77b22":"var(--surface)",
+                    border:`1px solid ${copied===gi?"#34c77b":"var(--border2)"}`,
+                    borderRadius:7,color:copied===gi?"#34c77b":"var(--text3)",cursor:"pointer",
+                    fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,
+                    padding:"5px 12px",whiteSpace:"nowrap",marginRight:4}}>
+                  {copied===gi ? '✓ הועתק!' : '📤 העתק'}
+                </button>
+              </div>
+
+              {/* Soldier list */}
+              <div style={{padding:"8px 14px 12px",display:"flex",flexWrap:"wrap",gap:6}}>
+                {data.members.map(({name})=>{
+                  const st = data.statusMap[name];
+                  const col = statusColor[st] || '#aaa';
+                  return (
+                    <div key={name} style={{display:"flex",alignItems:"center",gap:0,
+                      background:"var(--surface2)",borderRadius:8,overflow:"hidden",
+                      border:`1px solid ${col}44`,minWidth:120}}>
+                      <span style={{flex:1,padding:"5px 9px",fontSize:12,fontWeight:700,color:"var(--text)"}}>
+                        {name}
+                      </span>
+                      <span style={{padding:"5px 8px",fontSize:11,fontWeight:800,
+                        background:col+"22",color:col,whiteSpace:"nowrap"}}>
+                        {st}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Text preview */}
+              <div style={{margin:"0 14px 12px",background:"rgba(0,0,0,0.25)",borderRadius:8,
+                padding:"10px 12px",fontFamily:"monospace",fontSize:11,
+                color:"var(--text2)",whiteSpace:"pre",lineHeight:1.6,
+                maxHeight:180,overflowY:"auto",direction:"rtl",textAlign:"right"}}>
+                {data.text}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   function MembersView() {
     const inp = {display:"block",width:"100%",marginTop:3,padding:"5px 8px",borderRadius:7,border:"1px solid var(--border2)",background:"var(--surface2)",color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:13};
     const btn = (extra={}) => ({background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text2)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:12,padding:"4px 10px",...extra});
@@ -4797,6 +5101,7 @@ function App() {
           <button className={`view-btn ${view==="builder"?"active":""}`} onClick={()=>setView("builder")}>🛠 בנייה</button>
           <button className={`view-btn ${view==="calendar"?"active":""}`} onClick={()=>setView("calendar")}>📅 לוח חופשות</button>
           <button className={`view-btn ${view==="tracking"?"active":""}`} onClick={()=>setView("tracking")}>⚖️ טבלת צדק</button>
+          <button className={`view-btn ${view==="doch"?"active":""}`} onClick={()=>setView("doch")}>📋 דוח 1</button>
           <button className={`view-btn ${view==="members"?"active":""}`} onClick={()=>setView("members")}>👥 חיילים</button>
           <button className={`view-btn ${view==="parade"?"active":""}`} onClick={()=>setView("parade")}>☀️ מסדר בוקר</button>
           <button className={`view-btn ${view==="settings"?"active":""}`} onClick={()=>setView("settings")}>⚙️ הגדרות</button>
@@ -5015,6 +5320,7 @@ function App() {
        view==="settings" ? <SettingsView/> :
        view==="calendar" ? <CalendarView/> :
        view==="tracking" ? <TrackingView/> :
+       view==="doch"    ? <DochView/> :
        view==="members" ? <MembersView/> :
        view==="parade" ? <ParadeView/> :
        <BuilderView/>}
