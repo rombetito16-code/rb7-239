@@ -413,141 +413,18 @@ function getBlockedNames(allAss, targetDayId, targetMission, missionSettings, pl
 async function exportDisplayToPDF(dayLabel, dateOnly) {
   const el = document.getElementById('display-export-area');
   if (!el) { alert('פתח את מסך התצוגה תחילה'); return; }
-  const prevZoom = el.style.zoom;
-  // Apply print-friendly overrides temporarily
-  el.style.zoom = '1';
+  // Only hide edit buttons during capture — keep everything else exactly as on screen
   const printStyle = document.createElement('style');
   printStyle.id = '__pdf_print_style';
-  printStyle.textContent = `
-    #display-export-area { background: #fafbff !important; padding: 32px !important; font-family: 'Heebo', 'Arial Hebrew', Arial, sans-serif !important; color: #000 !important; }
-    #display-export-area * { letter-spacing: 0.4px !important; word-spacing: 6px !important; }
-    #display-export-area .display-grid { gap: 24px !important; zoom: 1 !important; }
-    /* ======= COMBAT MILITARY CARDS - DARK & READABLE ======= */
-    #display-export-area .mcard {
-      background: #ffffff !important;
-      border: 4px solid #000 !important;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.25) !important;
-      border-radius: 14px !important;
-      position: relative !important;
-      overflow: hidden !important;
-    }
-    #display-export-area .mcard::before {
-      content: "" !important;
-      position: absolute !important; top: 0 !important; right: 0 !important; left: 0 !important;
-      height: 6px !important;
-      background: linear-gradient(90deg, #0a1535 0%, #1e2c4e 50%, #0a1535 100%) !important;
-    }
-    #display-export-area .mcard-header {
-      padding: 22px 26px 18px !important;
-      border-bottom: 4px double #000 !important;
-      background: linear-gradient(180deg, #e8edf7 0%, #f4f7fc 100%) !important;
-    }
-    #display-export-area .mcard-title {
-      color: #000 !important; font-size: 54px !important; font-weight: 900 !important;
-      line-height: 1.25 !important; margin: 10px 0 8px !important;
-    }
-    #display-export-area .mcard-time {
-      color: #000 !important; font-size: 32px !important; font-weight: 800 !important;
-      line-height: 1.4 !important; margin-top: 8px !important; word-spacing: 8px !important;
-      background: #d4dbe8 !important; padding: 8px 16px !important; border-radius: 8px !important;
-      display: inline-block !important; border-left: 5px solid #0a1535 !important;
-    }
-    #display-export-area .mcard-icon { font-size: 60px !important; }
-    #display-export-area .mcard-body { padding: 24px !important; gap: 16px !important; }
-    #display-export-area .slot-label {
-      color: #fff !important; background: #0a1535 !important;
-      font-size: 26px !important; font-weight: 900 !important;
-      margin: 10px 0 8px !important; padding: 8px 16px !important;
-      letter-spacing: 1.5px !important; border-radius: 6px !important;
-      display: inline-block !important; text-transform: uppercase !important;
-    }
-    /* DARKER cards for soldiers - higher contrast */
-    #display-export-area .ntag {
-      font-size: 48px !important; font-weight: 900 !important;
-      padding: 22px 28px !important; line-height: 1.35 !important;
-      min-height: 80px !important; border-radius: 12px !important; word-spacing: 7px !important;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3), inset 0 -4px 0 rgba(0,0,0,0.25) !important;
-      border: 3px solid #000 !important;
-      filter: saturate(1.15) brightness(0.9) !important;
-    }
-    #display-export-area .ntag.filled { color: #000 !important; }
-    #display-export-area .ntag > div:first-child {
-      font-size: 48px !important; font-weight: 900 !important;
-      line-height: 1.25 !important; color: #000 !important;
-    }
-    /* Personal number & role - LARGER & DARKER */
-    #display-export-area .ntag > div:not(:first-child) {
-      font-size: 28px !important; font-weight: 800 !important; opacity: 1 !important;
-      margin-top: 8px !important; letter-spacing: 1.5px !important;
-      color: rgba(0,0,0,0.85) !important;
-    }
-    #display-export-area .ntag.empty {
-      background: repeating-linear-gradient(45deg,#dce2ed,#dce2ed 8px,#c4cbdc 8px,#c4cbdc 16px) !important;
-      color: #1a2545 !important; border: 3px dashed #000 !important;
-      font-style: italic !important; box-shadow: none !important; filter: none !important;
-    }
-    #display-export-area .ntag-grid { gap: 18px !important; }
-    /* Compact cards (sg, amada, etc) - also enlarged */
-    #display-export-area .mcard.compact .mcard-title { font-size: 40px !important; }
-    #display-export-area .mcard.compact .mcard-time { font-size: 26px !important; padding: 5px 12px !important; }
-    #display-export-area .mcard.compact .ntag { font-size: 38px !important; padding: 16px 22px !important; min-height: 64px !important; }
-    #display-export-area .mcard.compact .ntag > div:first-child { font-size: 38px !important; }
-    #display-export-area .mcard.compact .ntag > div:not(:first-child) { font-size: 22px !important; }
-    #display-export-area .mcard.compact .mcard-header { padding: 16px 22px !important; }
-    #display-export-area .mcard.compact .mcard-icon { font-size: 42px !important; }
-    /* ======= MILITARY TOP BANNER ======= */
-    #display-export-area .display-grid > div:first-child > div {
-      background: linear-gradient(135deg,#0f1a35 0%,#1a2540 50%,#0f1a35 100%) !important;
-      padding: 30px 50px !important;
-      border-radius: 16px !important;
-      border: 3px solid #4f9cf9 !important;
-      box-shadow: 0 6px 20px rgba(15,25,53,0.4), 0 0 30px rgba(79,156,249,0.25) !important;
-      position: relative !important;
-      overflow: hidden !important;
-    }
-    #display-export-area .display-grid > div:first-child > div * { color: #fff !important; line-height: 1.55 !important; }
-    /* ======= HUGE BANNER TEXTS ======= */
-    /* Motivation quote (right) - MAIN TEXT 40px */
-    #display-export-area .pdf-quote-box { max-width: 380px !important; padding: 10px 18px !important; }
-    #display-export-area .pdf-quote-text { font-size: 40px !important; font-weight: 700 !important; line-height: 1.35 !important; }
-    /* Date (center) */
-    #display-export-area .pdf-date-box { padding: 0 28px !important; }
-    #display-export-area .pdf-date-icon { font-size: 44px !important; }
-    #display-export-area .pdf-date-day { font-size: 24px !important; font-weight: 700 !important; letter-spacing: 2px !important; margin-top: 4px !important; }
-    #display-export-area .pdf-date-main {
-      font-size: 72px !important; font-weight: 900 !important; line-height: 1.05 !important;
-      color: #4f9cf9 !important; letter-spacing: 3px !important; margin: 6px 0 !important;
-      text-shadow: 0 2px 10px rgba(79,156,249,0.6) !important;
-    }
-    #display-export-area .pdf-date-title { font-size: 28px !important; font-weight: 800 !important; letter-spacing: 4px !important; margin-top: 10px !important; }
-    /* Grant section (left) - MAIN AMOUNT 40px */
-    #display-export-area .pdf-grant-box { padding: 10px 18px !important; min-width: 280px !important; }
-    #display-export-area .pdf-grant-box > div:first-child {
-      font-size: 22px !important; font-weight: 800 !important; margin-bottom: 8px !important; gap: 12px !important;
-    }
-    /* The grant amount - MAIN 40px */
-    #display-export-area .pdf-grant-box > div:nth-child(2) {
-      font-size: 40px !important; font-weight: 900 !important; line-height: 1.1 !important;
-      color: #34c77b !important; text-shadow: 0 2px 8px rgba(52,199,123,0.5) !important;
-    }
-    /* "יום X מתוך Y · 133 ש/יום" - SMALL details 18px */
-    #display-export-area .pdf-grant-box > div:nth-child(3) {
-      font-size: 18px !important; font-weight: 600 !important; margin-top: 6px !important; opacity: 0.9 !important;
-    }
-    /* Total grant line */
-    #display-export-area .pdf-grant-box > div:nth-child(5) {
-      font-size: 16px !important; font-weight: 700 !important; margin-top: 6px !important; opacity: 0.85 !important;
-    }
-    /* Hide all "edit" buttons from PDF */
-    #display-export-area button { display: none !important; }
-  `;
+  printStyle.textContent = `#display-export-area button { display: none !important; }
+    #display-export-area .display-grid { zoom: 1 !important; }`;
   document.head.appendChild(printStyle);
   try {
     await document.fonts.ready;
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise(r => setTimeout(r, 300));
     const canvas = await html2canvas(el, {
       scale: 3,
-      backgroundColor: '#ffffff',
+      backgroundColor: '#0f1117',
       useCORS: true,
       logging: false,
       imageTimeout: 0,
@@ -555,10 +432,10 @@ async function exportDisplayToPDF(dayLabel, dateOnly) {
       windowHeight: el.scrollHeight,
       onclone: (doc) => {
         const c = doc.getElementById('display-export-area');
-        if (c) { c.style.zoom = '1'; c.style.padding = '10px'; }
+        if (c) { c.style.zoom = '1'; }
       }
     });
-    // === EXPORT AS PNG IMAGE ===
+    // Export PNG — looks exactly like the screen
     const imgData = canvas.toDataURL('image/png');
     const safeName = (dayLabel||'').replace(/[\/\\:]/g,'-');
     const link = document.createElement('a');
@@ -568,8 +445,7 @@ async function exportDisplayToPDF(dayLabel, dateOnly) {
     link.click();
     document.body.removeChild(link);
     return;
-    // (legacy PDF code below — disabled)
-    /* eslint-disable */
+    /* legacy dead code below */
     const { jsPDF } = window.jspdf;
     const imgRatio = canvas.width / canvas.height;
     const orient = imgRatio >= 1 ? 'landscape' : 'portrait';
@@ -585,23 +461,17 @@ async function exportDisplayToPDF(dayLabel, dateOnly) {
     let w, h;
     if (imgRatio > pageRatio) { w = usableW; h = w / imgRatio; }
     else { h = usableH; w = h * imgRatio; }
-    // White background
     pdf.setFillColor(250, 251, 255);
     pdf.rect(0, 0, pageW, pageH, 'F');
-    // === MILITARY HEADER BAR ===
-    // Dark navy header
     pdf.setFillColor(15, 25, 53);
     pdf.rect(0, 0, pageW, headerH, 'F');
-    // Accent strip
     pdf.setFillColor(79, 156, 249);
     pdf.rect(0, headerH, pageW, 1.5, 'F');
-    // Tactical corner marks (left + right)
     pdf.setFillColor(79, 156, 249);
     pdf.rect(0, 0, 8, 4, 'F');
     pdf.rect(pageW-8, 0, 8, 4, 'F');
     pdf.rect(0, headerH-4, 4, 4, 'F');
     pdf.rect(pageW-4, headerH-4, 4, 4, 'F');
-    // Title text (English for jsPDF compatibility)
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(22);
     pdf.setFont('helvetica', 'bold');
@@ -610,20 +480,16 @@ async function exportDisplayToPDF(dayLabel, dateOnly) {
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(180, 200, 240);
     pdf.text('Plug Aleph 239 | Operational Schedule', margin + 6, headerH - 1);
-    // Right side: date in numeric form (Hebrew not supported by default jsPDF fonts)
     pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(255, 255, 255);
-    // Use dateOnly (numeric like "26/5") to avoid Hebrew rendering issues
     const dateText = dateOnly || (dayLabel ? dayLabel.split('_').pop() : '');
     pdf.text('DATE: ' + dateText, pageW - margin - 6, headerH - 5, { align: 'right' });
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(180, 200, 240);
     pdf.text('CLASSIFIED', pageW - margin - 6, headerH - 1, { align: 'right' });
-    // Main content
     pdf.addImage(imgData, 'PNG', (pageW-w)/2, headerH + 4 + (usableH-h)/2, w, h);
-    // === MILITARY FOOTER ===
     pdf.setFillColor(15, 25, 53);
     pdf.rect(0, pageH - footerH, pageW, footerH, 'F');
     pdf.setFillColor(79, 156, 249);
@@ -635,11 +501,9 @@ async function exportDisplayToPDF(dayLabel, dateOnly) {
     const ts = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     pdf.text(`Generated: ${ts}`, pageW - margin - 6, pageH - 4, { align: 'right' });
     pdf.text('FOR INTERNAL USE ONLY', margin + 6, pageH - 4);
-    // Corner marks footer
     pdf.setFillColor(79, 156, 249);
     pdf.rect(0, pageH - 4, 8, 4, 'F');
     pdf.rect(pageW-8, pageH - 4, 8, 4, 'F');
-    // Outer border (thick blue)
     pdf.setDrawColor(79, 156, 249);
     pdf.setLineWidth(0.8);
     pdf.rect(2, 2, pageW - 4, pageH - 4);
@@ -834,19 +698,22 @@ function DisplayCard({ mission, assignment, dayId, platoons }) {
   );
 }
 
-function SlotBox({ label, assigned, onRemove, onClick, onSwap, onRemoveSwap, highlight, roleLabel, platoons }) {
+function SlotBox({ label, assigned, onRemove, onClick, onSwap, onRemoveSwap, highlight, roleLabel, platoons, missionCount }) {
   const getStyle = (p) => getPlatoonStyleFromMap(platoons, p);
   const formatT = (h,m) => `${String(h).padStart(2,'0')}:${String(m||0).padStart(2,'0')}`;
   return (
     <div className={`sbox ${assigned?"filled":highlight?"hl":"empty"}`} style={{...(assigned?getStyle(assigned.platoon):{}),flexDirection:assigned&&assigned.replacement?"column":"row",alignItems:assigned&&assigned.replacement?"stretch":"center",gap:assigned&&assigned.replacement?4:8}} onClick={!assigned ? onClick : undefined}>
       {/* Primary slot */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,width:"100%"}}>
-        <span style={{flex:1}}>
+        <span style={{flex:1,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
           {assigned ? (
             <>
               {assigned.name}
               {assigned.replacement && <span style={{fontSize:10,marginRight:6,opacity:0.85,fontWeight:500}}>(עד {formatT(assigned.replacement.atHour,assigned.replacement.atMinute)})</span>}
               {roleLabel && <span style={{fontSize:10,marginRight:6,opacity:0.7}}>· {roleLabel}</span>}
+              {missionCount !== undefined && missionCount > 0 && (
+                <span style={{fontSize:10,fontWeight:800,background:"rgba(0,0,0,0.3)",borderRadius:4,padding:"0 5px",whiteSpace:"nowrap"}}>× {missionCount}</span>
+              )}
             </>
           ) : (highlight ? "לחץ לשיבוץ ←" : label)}
           {!assigned && roleLabel && <span style={{fontSize:10,marginRight:6,opacity:0.7}}>· {roleLabel}</span>}
@@ -1238,10 +1105,19 @@ function App() {
           if (typeof globalRules !== 'undefined' && globalRules?.nightBeforeHome && isNightMission && nextAftar.has(p.name)) return false;
           return true;
         };
+        // Fairness (טבלת צדק): compute how many times each candidate has done THIS mission, sort fewest first
+        const missionCountForM = {};
+        Object.values(prev).forEach(dayData => {
+          const a = dayData[m.id]; if (!a) return;
+          [...(a.commanders||[]),...(a.soldiers||[])].filter(Boolean).forEach(p => {
+            missionCountForM[p.name] = (missionCountForM[p.name] || 0) + 1;
+          });
+        });
+        const fairCands = [...allCands].sort((a,b) => (missionCountForM[a.name]||0) - (missionCountForM[b.name]||0));
         for (let i = 0; i < ms.commander; i++) {
           if (ass.commanders[i]) continue;
-          const cand = allCands.find(p => baseCanUse(p) && (p.isCmdPlat || p.roles.some(r => ["מפקד","סמל","קצין"].includes(r))))
-                  || allCands.find(p => baseCanUse(p));
+          const cand = fairCands.find(p => baseCanUse(p) && (p.isCmdPlat || p.roles.some(r => ["מפקד","סמל","קצין"].includes(r))))
+                  || fairCands.find(p => baseCanUse(p));
           if (cand) { ass.commanders[i] = {name:cand.name, platoon:cand.platoon}; usedNames.add(cand.name); }
         }
         for (let i = 0; i < ms.soldiers; i++) {
@@ -1254,8 +1130,8 @@ function App() {
               cum += rs.count;
             }
           }
-          const cand = allCands.find(p => baseCanUse(p) && (!requiredRole || p.roles.includes(requiredRole)) && (requiredRole || !p.isCmdPlat))
-                  || allCands.find(p => baseCanUse(p) && (!requiredRole || p.roles.includes(requiredRole)));
+          const cand = fairCands.find(p => baseCanUse(p) && (!requiredRole || p.roles.includes(requiredRole)) && (requiredRole || !p.isCmdPlat))
+                  || fairCands.find(p => baseCanUse(p) && (!requiredRole || p.roles.includes(requiredRole)));
           if (cand) { ass.soldiers[i] = {name:cand.name, platoon:cand.platoon}; usedNames.add(cand.name); }
         }
       }
@@ -1453,6 +1329,19 @@ function App() {
   function BuilderView() {
     const effMission = mission ? getEffectiveMission(mission, activeDay) : null;
     const ms = effMission ? getMissionSlots(effMission) : {commander:0, soldiers:0};
+
+    // Count how many times each soldier was assigned to the current mission (across ALL days)
+    const missionCountMap = React.useMemo(() => {
+      const map = {};
+      if (!activeMission) return map;
+      Object.entries(allAss).forEach(([dayId, dayData]) => {
+        const a = dayData[activeMission]; if (!a) return;
+        [...(a.commanders||[]), ...(a.soldiers||[])].filter(Boolean).forEach(p => {
+          map[p.name] = (map[p.name] || 0) + 1;
+        });
+      });
+      return map;
+    }, [allAss, activeMission]);
     return (
       <div className="main">
         <div className="builder-layout">
@@ -1506,6 +1395,7 @@ function App() {
                                   <SlotBox key={ri+"_"+i} label={`${rs.role} ריק`} roleLabel={rs.role}
                                     platoons={platoons}
                                     assigned={p} highlight={selPeople.length>0&&!p}
+                                    missionCount={p ? missionCountMap[p.name] : undefined}
                                     onClick={()=>!p&&slotClick("soldiers",slotIdx)}
                                     onRemove={()=>removePerson("soldiers",slotIdx)}
                                     onSwap={()=>setSwapModal({type:"soldiers",idx:slotIdx,current:p,missionTime:{startH:effMission.startH,endH:effMission.endH}})}
@@ -1525,6 +1415,7 @@ function App() {
                             {cmdArr.map((p,i)=>(
                               <SlotBox key={i} label="מפקד ריק" assigned={p} highlight={selPeople.length>0&&!p}
                                 platoons={platoons}
+                                missionCount={p ? missionCountMap[p.name] : undefined}
                                 onClick={()=>!p&&slotClick("commanders",i)} onRemove={()=>removePerson("commanders",i)}
                                 onSwap={()=>setSwapModal({type:"commanders",idx:i,current:p,missionTime:{startH:effMission.startH,endH:effMission.endH}})}
                                 onRemoveSwap={()=>removeSwap("commanders",i)}/>
@@ -1539,6 +1430,7 @@ function App() {
                             {solArr.map((p,i)=>(
                               <SlotBox key={i} label="חייל ריק" assigned={p} highlight={selPeople.length>0&&!p}
                                 platoons={platoons}
+                                missionCount={p ? missionCountMap[p.name] : undefined}
                                 onClick={()=>!p&&slotClick("soldiers",i)} onRemove={()=>removePerson("soldiers",i)}
                                 onSwap={()=>setSwapModal({type:"soldiers",idx:i,current:p,missionTime:{startH:effMission.startH,endH:effMission.endH}})}
                                 onRemoveSwap={()=>removeSwap("soldiers",i)}/>
@@ -1609,6 +1501,7 @@ function App() {
                     const name = getMemberName(rawMember);
                     const roles = getMemberRoles(rawMember);
                     const memberBlocked = getMemberBlocked(rawMember);
+                    const missionCount = missionCountMap[name] || 0;
                     const status = getMemberStatus(rawMember);
                     const statusInfo = getStatusInfo(status);
                     const isStatusBlk = statusInfo.blocks;
@@ -1658,6 +1551,7 @@ function App() {
                           else setSelPeople(prev=>[...prev,{name,platoon:key}]);
                         }}>
                         {name}
+                        {missionCount > 0 && <span style={{display:"block",fontSize:10,fontWeight:800,marginTop:2,background:"rgba(0,0,0,0.3)",borderRadius:4,padding:"0 5px",letterSpacing:0.3}}>× {missionCount}</span>}
                         {roles.length>0 && <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center"}}>
                           {roles.slice(0,3).map(r=><span key={r} className="role-tag">{r}</span>)}
                         </div>}
@@ -2612,7 +2506,7 @@ function App() {
     const platoonIdx = (pl) => { const i = PLATOON_ORDER.indexOf(pl); return i>=0?i:99; };
     return (
       <div className="main" style={{maxWidth:960,margin:"0 auto",padding:"20px 16px"}}>
-        <div style={{fontSize:18,fontWeight:800,marginBottom:16}}>📊 מעקבים</div>
+        <div style={{fontSize:18,fontWeight:800,marginBottom:16}}>⚖️ טבלת צדק</div>
         {(() => {
           const counts = {};
           allMembers.forEach(m => { counts[m.name] = { count: 0, platoon: m.platoon }; });
@@ -2901,7 +2795,7 @@ function App() {
           <button className={`view-btn ${view==="display"?"active":""}`} onClick={()=>setView("display")}>👁 תצוגה</button>
           <button className={`view-btn ${view==="builder"?"active":""}`} onClick={()=>setView("builder")}>🛠 בנייה</button>
           <button className={`view-btn ${view==="calendar"?"active":""}`} onClick={()=>setView("calendar")}>📅 לוח חופשות</button>
-          <button className={`view-btn ${view==="tracking"?"active":""}`} onClick={()=>setView("tracking")}>📊 מעקבים</button>
+          <button className={`view-btn ${view==="tracking"?"active":""}`} onClick={()=>setView("tracking")}>⚖️ טבלת צדק</button>
           <button className={`view-btn ${view==="members"?"active":""}`} onClick={()=>setView("members")}>👥 חיילים</button>
           <button className={`view-btn ${view==="parade"?"active":""}`} onClick={()=>setView("parade")}>☀️ מסדר בוקר</button>
           <button className={`view-btn ${view==="settings"?"active":""}`} onClick={()=>setView("settings")}>⚙️ הגדרות</button>
@@ -3324,6 +3218,14 @@ function App() {
         const effM = getEffectiveMission(mission, activeDay);
         const CMD_ROLE_NAMES = new Set(["מפקד","סמל","קצין","סגן מפקד","מ\"מ"]);
         const isCmdPlatoon = (k) => CMD_PLATOONS.has(k) || (platoons[k]?.isCustomCmd === true);
+        // Compute mission count for fairness sorting
+        const pickerMissionCount = {};
+        Object.values(allAss).forEach(dayData => {
+          const a = dayData[activeMission]; if (!a) return;
+          [...(a.commanders||[]),...(a.soldiers||[])].filter(Boolean).forEach(p => {
+            pickerMissionCount[p.name] = (pickerMissionCount[p.name] || 0) + 1;
+          });
+        });
         const groups = [];
         Object.entries(platoons).forEach(([k,p]) => {
           if (p.members.length === 0) return;
@@ -3339,7 +3241,9 @@ function App() {
             // generic soldier slot: prefer non-cmd platoons but allow all
             return true;
           });
-          if (members.length > 0) groups.push({key:k, platoon:p, members: sortMembersByName(members)});
+          // Sort by mission count ascending (fewest first = fairness)
+          const sorted = [...members].sort((a,b) => (pickerMissionCount[getMemberName(a)]||0) - (pickerMissionCount[getMemberName(b)]||0));
+          if (sorted.length > 0) groups.push({key:k, platoon:p, members: sorted});
         });
         // Order: cmd platoons first if commander
         if (picker.isCommander) groups.sort((a,b) => (isCmdPlatoon(b.key)?1:0) - (isCmdPlatoon(a.key)?1:0));
@@ -3440,10 +3344,17 @@ function App() {
                       // Now: clicking already-assigned soldier asks confirmation; only hard-block aftar/gimel
                       const isHardBusy = isAftar || isGimel;
                       const busyLabel = isAftar?"בבית":isGimel?"בגימל":isAssigned?"⚠ כבר משובץ":"";
+                      const cnt = pickerMissionCount[name] || 0;
+                      // Color the count badge: green=0, yellow=1-2, orange=3-4, red=5+
+                      const cntColor = cnt===0?"#34c77b":cnt<=2?"#ffd54f":cnt<=4?"#ff9800":"#ef5350";
                       return (
                         <button key={name} onClick={()=>!isHardBusy && pickAndAssign(name, g.key)}
-                          style={{...getPlatoonStyleFromMap(platoons,g.key),border:"none",borderRadius:8,padding:"10px 14px",fontFamily:"Heebo,sans-serif",fontSize:14,fontWeight:700,cursor:isHardBusy?"not-allowed":"pointer",opacity:isHardBusy?0.4:(isAssigned||isResting?0.75:1),display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:110, ...(isAssigned&&!isHardBusy?{outline:'2px dashed #4f9cf9'}:isResting&&!isHardBusy?{outline:'2px solid #ffcc80'}:{})}}>
-                          <span>{name}</span>
+                          style={{...getPlatoonStyleFromMap(platoons,g.key),border:"none",borderRadius:8,padding:"10px 14px",fontFamily:"Heebo,sans-serif",fontSize:14,fontWeight:700,cursor:isHardBusy?"not-allowed":"pointer",opacity:isHardBusy?0.4:(isAssigned||isResting?0.75:1),display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:110,position:"relative", ...(isAssigned&&!isHardBusy?{outline:'2px dashed #4f9cf9'}:isResting&&!isHardBusy?{outline:'2px solid #ffcc80'}:{})}}>
+                          {/* Fairness count badge */}
+                          <span style={{position:"absolute",top:4,left:6,fontSize:10,fontWeight:900,color:cntColor,background:"rgba(0,0,0,0.45)",borderRadius:5,padding:"0 5px",lineHeight:"1.6"}}>
+                            {cnt===0?"✓ 0":`× ${cnt}`}
+                          </span>
+                          <span style={{marginTop:6}}>{name}</span>
                           {roles.length>0 && <span style={{fontSize:9,opacity:0.85}}>{roles.join(" · ")}</span>}
                           {isHardBusy && <span style={{fontSize:9,background:"rgba(0,0,0,0.3)",padding:"1px 5px",borderRadius:4}}>{busyLabel}</span>}
                           {!isHardBusy && isAssigned && <span style={{fontSize:9,background:"rgba(79,156,249,0.3)",padding:"1px 5px",borderRadius:4,color:"#fff"}}>⚠ כבר משובץ (יישאל)</span>}
