@@ -559,10 +559,10 @@ async function exportDisplayToPDF(dayLabel, dateOnly) {
       }
     });
     // === EXPORT AS PNG IMAGE ===
-    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const imgData = canvas.toDataURL('image/png');
     const safeName = (dayLabel||'').replace(/[\/\\:]/g,'-');
     const link = document.createElement('a');
-    link.download = `שבצק_${safeName}.jpeg`;
+    link.download = `שבצק_${safeName}.png`;
     link.href = imgData;
     document.body.appendChild(link);
     link.click();
