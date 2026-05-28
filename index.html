@@ -5374,15 +5374,16 @@ function App() {
             return n;
           });
           // Sync aftar: only include names of active soldiers in the app
-          setAftarByDayAndSave(prev => {
-            // Collect only ACTIVE member names from current platoons
-            const existingNames = new Set();
-            Object.values(platoons).forEach(plat => {
-              (plat.members||[]).forEach(m => {
-                if ((typeof m === 'string' ? 'active' : (m.status || 'active')) === 'active')
-                  existingNames.add(typeof m === 'string' ? m : m.name);
-              });
+          // Collect active names BEFORE calling setState (avoids stale closure over platoons)
+          const existingNamesForSync = new Set();
+          Object.values(platoons).forEach(plat => {
+            (plat.members||[]).forEach(m => {
+              if ((typeof m === 'string' ? 'active' : (m.status || 'active')) === 'active')
+                existingNamesForSync.add(typeof m === 'string' ? m : m.name);
             });
+          });
+          setAftarByDayAndSave(prev => {
+            const existingNames = existingNamesForSync;
             const c = JSON.parse(JSON.stringify(prev));
             Object.keys(imp.aftar).forEach(dayId => { c[dayId] = []; });
             Object.entries(imp.aftar).forEach(([dayId, names]) => {
