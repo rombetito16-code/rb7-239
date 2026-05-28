@@ -5350,61 +5350,47 @@ function App() {
           // Build lookup of soldiers from Excel: name → {platoon, personalNumber, roles, net}
           const impByName = {};
           imp.soldiers.forEach(s => { impByName[s.name] = s; });
-          const impNames = new Set(imp.soldiers.map(s => s.name));
-          // Only sync platoons that appear in the Excel (soldiers1/2/3/pluga)
-          const syncedPlatoons = new Set(imp.soldiers.map(s => s.platoon));
-          let added = 0, removed = 0, updated = 0;
+          let updated = 0;
           const fmtId = id => id ? id.replace(/(\d{4})_(\d{2})_(\d{2})/,'$3/$2/$1') : '';
           const rangeStr = imp.dateRange ? `${fmtId(imp.dateRange.first)} – ${fmtId(imp.dateRange.last)}` : '';
           if (!window.confirm(
             `סנכרון מגוגל דרייב (עודכן: ${imp.synced})\n\n` +
-            `• חיילים באקסל: ${imp.soldiers.length}\n` +
             `• ימי חופשה: ${Object.keys(imp.aftar).length} (${rangeStr})\n\n` +
-            `הסנכרון יוסיף חיילים חדשים, ימחק חיילים שהוסרו מהאקסל, ויעדכן מספרים אישיים וימי יציאה לבית. תפקידים לא ישתנו.\n\nלהמשיך?`
+            `הסנכרון יעדכן יציאות לבית לפי שמות קיימים בתוכנה בלבד. שמות לא יתווספו או יימחקו.\n\nלהמשיך?`
           )) return;
+          // Update personalNumber for existing soldiers only
           setPlatoons(prev => {
             const n = JSON.parse(JSON.stringify(prev));
-            // Only touch platoons that are managed by the Excel
-            Object.entries(n).forEach(([k, plat]) => {
-              if (!syncedPlatoons.has(k)) return;
-              // Remove soldiers not in Excel
-              const before = plat.members.length;
-              plat.members = plat.members.filter(m => {
-                const name = typeof m === 'string' ? m : m.name;
-                return impNames.has(name);
-              });
-              removed += before - plat.members.length;
-              // Update existing soldiers (personalNumber only — roles are not touched)
+            Object.values(n).forEach(plat => {
               plat.members = plat.members.map(m => {
                 const name = typeof m === 'string' ? m : m.name;
                 const src = impByName[name];
                 if (!src) return m;
                 const cur = typeof m === 'string' ? { name: m, roles: [], blockedMissions: [], personalNumber: '', phone: '', status: 'active' } : { ...m };
-                let changed = false;
-                if (src.personalNumber && cur.personalNumber !== src.personalNumber) { cur.personalNumber = src.personalNumber; changed = true; }
-                if (changed) updated++;
+                if (src.personalNumber && cur.personalNumber !== src.personalNumber) { cur.personalNumber = src.personalNumber; updated++; }
                 return cur;
-              });
-              // Add new soldiers
-              imp.soldiers.filter(s => s.platoon === k).forEach(s => {
-                const exists = plat.members.some(m => (typeof m === 'string' ? m : m.name) === s.name);
-                if (!exists) {
-                  plat.members.push({ name: s.name, roles: [], blockedMissions: [], personalNumber: s.personalNumber, phone: '', status: 'active' });
-                  added++;
-                }
               });
             });
             return n;
           });
-          // Sync aftar days (replace range 20/5–1/7 fully)
+          // Sync aftar: only include names of active soldiers in the app
           setAftarByDayAndSave(prev => {
+            // Collect only ACTIVE member names from current platoons
+            const existingNames = new Set();
+            Object.values(platoons).forEach(plat => {
+              (plat.members||[]).forEach(m => {
+                if ((typeof m === 'string' ? 'active' : (m.status || 'active')) === 'active')
+                  existingNames.add(typeof m === 'string' ? m : m.name);
+              });
+            });
             const c = JSON.parse(JSON.stringify(prev));
-            // Clear existing data in range then set from Excel
             Object.keys(imp.aftar).forEach(dayId => { c[dayId] = []; });
-            Object.entries(imp.aftar).forEach(([dayId, names]) => { c[dayId] = [...names]; });
+            Object.entries(imp.aftar).forEach(([dayId, names]) => {
+              c[dayId] = names.filter(n => existingNames.has(n));
+            });
             return c;
           });
-          alert(`✅ סנכרון הושלם!\n• נוספו: ${added} חיילים\n• נמחקו: ${removed} חיילים\n• עודכנו: ${updated} חיילים\n• חופשות: ${Object.keys(imp.aftar).length} ימים`);
+          alert(`✅ סנכרון הושלם!\n• עודכנו מספרים אישיים: ${updated}\n• חופשות: ${Object.keys(imp.aftar).length} ימים`);
         }} style={{background:"linear-gradient(135deg,#ffd54f22,#ff980022)",border:"1.5px solid #ffd54f88",borderRadius:7,color:"#ffd54f",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"4px 12px"}}>📥 סנכרן מגוגל דרייב</button>
         <span title={`סונכרן לאחרון: ${window.EXCEL_IMPORT_2026?.synced||'לא ידוע'}\nקובץ: בקשות חיילים ראשוני 16.03.2026.xlsx\nכדי לסנכרן מחדש — אמור לClauде "עדכן חופשות מגוגל דרייב"`} style={{background:"rgba(79,156,249,0.1)",border:"1px solid rgba(79,156,249,0.3)",borderRadius:7,color:"var(--text3)",fontFamily:"Heebo,sans-serif",fontSize:10,padding:"4px 8px",cursor:"help"}}>☁️ גוגל דרייב · {window.EXCEL_IMPORT_2026?.synced||'—'}</span>
       </div>
