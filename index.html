@@ -5381,7 +5381,7 @@ function App() {
                 return impNames.has(name);
               });
               removed += before - plat.members.length;
-              // Update existing soldiers (personalNumber, roles)
+              // Update existing soldiers (personalNumber only — roles are not touched)
               plat.members = plat.members.map(m => {
                 const name = typeof m === 'string' ? m : m.name;
                 const src = impByName[name];
@@ -5389,7 +5389,6 @@ function App() {
                 const cur = typeof m === 'string' ? { name: m, roles: [], blockedMissions: [], personalNumber: '', phone: '', status: 'active' } : { ...m };
                 let changed = false;
                 if (src.personalNumber && cur.personalNumber !== src.personalNumber) { cur.personalNumber = src.personalNumber; changed = true; }
-                if (src.roles && src.roles.length && JSON.stringify(cur.roles) !== JSON.stringify(src.roles)) { cur.roles = src.roles; changed = true; }
                 if (changed) updated++;
                 return cur;
               });
@@ -5397,7 +5396,7 @@ function App() {
               imp.soldiers.filter(s => s.platoon === k).forEach(s => {
                 const exists = plat.members.some(m => (typeof m === 'string' ? m : m.name) === s.name);
                 if (!exists) {
-                  plat.members.push({ name: s.name, roles: s.roles, blockedMissions: [], personalNumber: s.personalNumber, phone: '', status: 'active' });
+                  plat.members.push({ name: s.name, roles: [], blockedMissions: [], personalNumber: s.personalNumber, phone: '', status: 'active' });
                   added++;
                 }
               });
