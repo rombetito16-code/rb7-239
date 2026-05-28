@@ -4687,6 +4687,7 @@ function App() {
       { keys:["cmd2","soldiers2"], label:"מחלקה 2" },
       { keys:["cmd3","soldiers3"], label:"מחלקה 3" },
       { keys:["pluga"],            label:"מסופחים" },
+      { keys:["pluga2"],           label:"מפקדת פלוגה" },
     ];
 
     const dayIdx   = DAY_IDS.indexOf(activeDay);
@@ -4726,7 +4727,6 @@ function App() {
           const name = typeof rawM === 'string' ? rawM : rawM.name;
           const st = getMemberStatus(rawM);
           if (st === 'absent') return; // לא נוכח = לא קיים
-          if (st === 'pitzul') return; // פיצול = לא נכלל בדוח 1
           members.push({ name, rawM });
         });
       });
