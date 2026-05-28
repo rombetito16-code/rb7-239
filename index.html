@@ -2893,7 +2893,17 @@ function App() {
       });
       setAllAss(base);
     }
-    if (stored.aftar) {
+    // בדיקה אם יש נתוני גוגל דרייב חדשים מה-Apps Script
+    if (stored.__gdrive_aftar && stored.__gdrive_synced) {
+      const gdriveAftar = stored.__gdrive_aftar;
+      const base = freshAftar();
+      if (stored.aftar) {
+        DAY_IDS.forEach(day => { if (stored.aftar[day]) base[day] = [...stored.aftar[day]]; });
+      }
+      DAY_IDS.forEach(day => { if (gdriveAftar[day]) base[day] = [...gdriveAftar[day]]; });
+      setAftarByDay(base);
+      window.__gdriveSynced = stored.__gdrive_synced;
+    } else if (stored.aftar) {
       // Use stored aftar as-is (source of truth after sync)
       const base = freshAftar();
       DAY_IDS.forEach(day => { if (stored.aftar[day]) base[day] = [...stored.aftar[day]]; });
@@ -5393,7 +5403,7 @@ function App() {
           });
           alert(`✅ סנכרון הושלם!\n• עודכנו מספרים אישיים: ${updated}\n• חופשות: ${Object.keys(imp.aftar).length} ימים`);
         }} style={{background:"linear-gradient(135deg,#ffd54f22,#ff980022)",border:"1.5px solid #ffd54f88",borderRadius:7,color:"#ffd54f",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"4px 12px"}}>📥 סנכרן מגוגל דרייב</button>
-        <span title={`סונכרן לאחרון: ${window.EXCEL_IMPORT_2026?.synced||'לא ידוע'}\nקובץ: בקשות חיילים ראשוני 16.03.2026.xlsx\nכדי לסנכרן מחדש — אמור לClauде "עדכן חופשות מגוגל דרייב"`} style={{background:"rgba(79,156,249,0.1)",border:"1px solid rgba(79,156,249,0.3)",borderRadius:7,color:"var(--text3)",fontFamily:"Heebo,sans-serif",fontSize:10,padding:"4px 8px",cursor:"help"}}>☁️ גוגל דרייב · {window.EXCEL_IMPORT_2026?.synced||'—'}</span>
+        <span title={`סנכרון אוטומטי Apps Script · סונכרן: ${window.__gdriveSynced||window.EXCEL_IMPORT_2026?.synced||'טרם סונכרן'}`} style={{background:window.__gdriveSynced?"rgba(52,199,123,0.12)":"rgba(79,156,249,0.1)",border:`1px solid ${window.__gdriveSynced?"rgba(52,199,123,0.4)":"rgba(79,156,249,0.3)"}`,borderRadius:7,color:window.__gdriveSynced?"var(--green)":"var(--text3)",fontFamily:"Heebo,sans-serif",fontSize:10,padding:"4px 8px",cursor:"help"}}>{window.__gdriveSynced?"🟢":"☁️"} גוגל דרייב · {window.__gdriveSynced||window.EXCEL_IMPORT_2026?.synced||'—'}</span>
       </div>
       {view==="display" ? <DisplayView/> :
        view==="settings" ? <SettingsView/> :
