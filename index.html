@@ -2452,8 +2452,9 @@ function initDayAssignments() {
   return init;
 }
 
-function getBlockedNames(allAss, targetDayId, targetMission, missionSettings, platoons, restExemptions) {
+function getBlockedNames(allAss, targetDayId, targetMission, missionSettings, platoons, restExemptions, customMissions) {
   const ms = missionSettings || {};
+  const allMissions = [...MISSION_DEFS, ...(customMissions||[])];
   const plugaMembers = new Set([
     ...(platoons?.pluga?.members||[]).map(getMemberName),
     ...(platoons?.pluga2?.members||[]).map(getMemberName)
@@ -2467,9 +2468,10 @@ function getBlockedNames(allAss, targetDayId, targetMission, missionSettings, pl
   if (targetMission.id==="maatzar") return { blocked: new Set(), blockedReasons: {} };
   dayOrder.forEach((dayId, di) => {
     const da = allAss[dayId] || {};
-    MISSION_DEFS.filter(m => m.isSiyur).forEach(sm => {
+    // Check all patrol/siyur missions including custom ones marked as isSiyur
+    allMissions.filter(m => m.isSiyur || ms[m.id]?.isSiyur).forEach(sm => {
       const ass = da[sm.id]; if (!ass) return;
-      const restH = ms[sm.id]?.restHours ?? 16;
+      const restH = ms[sm.id]?.restHours ?? sm.restHours ?? 16;
       if (restH === 0) return;
       if (isHetz) return;
       [...(ass.commanders||[]),...(ass.soldiers||[])].filter(Boolean).forEach(person => {
@@ -2486,9 +2488,15 @@ function getBlockedNames(allAss, targetDayId, targetMission, missionSettings, pl
         }
       });
     });
-    MISSION_DEFS.filter(m => m.id.startsWith("sg") || m.id==="amada_a" || m.id==="amada_b" || m.id==="toren_rasp" || m.id==="hetz4" || m.id==="siyur_boker" || m.id==="siyur_tzo").forEach(sm => {
+    // Check missions with restHours > 0 (sg, amada, toren, hetz, + any custom mission with restHours set)
+    allMissions.filter(m => {
+      if (m.isSiyur || ms[m.id]?.isSiyur) return false; // already handled above
+      const restH = ms[m.id]?.restHours ?? m.restHours ?? 0;
+      if (restH === 0) return false;
+      return m.id.startsWith("sg") || m.id==="amada_a" || m.id==="amada_b" || m.id==="toren_rasp" || m.id==="hetz4" || m.id==="siyur_boker" || m.id==="siyur_tzo" || m.id.startsWith("custom_");
+    }).forEach(sm => {
       const ass = da[sm.id]; if (!ass) return;
-      const restH = ms[sm.id]?.restHours ?? (sm.id==="toren_rasp" ? 8 : (sm.id==="hetz4") ? 12 : 12);
+      const restH = ms[sm.id]?.restHours ?? sm.restHours ?? (sm.id==="toren_rasp" ? 8 : (sm.id==="hetz4") ? 12 : 12);
       if (restH === 0) return;
       const isSameSlot = (dayId===targetDayId && sm.id===targetMission.id);
       if (isSameSlot) return;
@@ -2586,7 +2594,7 @@ function SafeDisplayCard(props) {
 }
 
 function DisplayCard({ mission, assignment, dayId, platoons }) {
-  if (!assignment) return null;
+  if (!assignment) assignment = { commanders: [], soldiers: [] };
   const getStyle = (p) => getPlatoonStyleFromMap(platoons, p);
   const normalizeArr = (arr, size) => {
     const cur = Array.isArray(arr) ? [...arr] : [];
@@ -2774,6 +2782,9 @@ function SlotBox({ label, assigned, onRemove, onClick, onSwap, onRemoveSwap, hig
     </div>
   );
 }
+
+// === נתוני ייבוא מאקסל 20/5–1/7 ===
+window.EXCEL_IMPORT_2026 = {"soldiers": [{"name": "שביט כהן", "platoon": "soldiers1", "personalNumber": "8113119", "roles": ["לוחם"], "net": ""}, {"name": "שובל כהן", "platoon": "soldiers1", "personalNumber": "9282567", "roles": ["לוחם"], "net": ""}, {"name": "גיא ברוק", "platoon": "soldiers1", "personalNumber": "5650387", "roles": ["לוחם"], "net": "נהג"}, {"name": "אלכסי מירסון", "platoon": "soldiers1", "personalNumber": "7516192", "roles": ["לוחם"], "net": ""}, {"name": "ג'יבלי", "platoon": "soldiers1", "personalNumber": "", "roles": ["לוחם"], "net": ""}, {"name": "אנה בלינסקי", "platoon": "soldiers1", "personalNumber": "9273605", "roles": ["לוחם"], "net": ""}, {"name": "פדריקו", "platoon": "soldiers1", "personalNumber": "6901001", "roles": ["לוחם"], "net": ""}, {"name": "קרן סבג", "platoon": "soldiers1", "personalNumber": "8789990", "roles": ["לוחם"], "net": ""}, {"name": "אנטוני מישצ'נקו", "platoon": "soldiers1", "personalNumber": "8740633", "roles": ["לוחם"], "net": "חובש"}, {"name": "שקד לוי", "platoon": "soldiers1", "personalNumber": "9156879", "roles": ["לוחם"], "net": ""}, {"name": "צוף ירקוני", "platoon": "soldiers1", "personalNumber": "9075937", "roles": ["לוחם"], "net": "נהג"}, {"name": "בן זהרי", "platoon": "soldiers1", "personalNumber": "", "roles": ["לוחם"], "net": ""}, {"name": "אור גל", "platoon": "soldiers1", "personalNumber": "8780847", "roles": ["ממ"], "net": ""}, {"name": "חיים בריס", "platoon": "soldiers1", "personalNumber": "5323359", "roles": ["מפקד"], "net": ""}, {"name": "אופיר שמולביץ", "platoon": "soldiers1", "personalNumber": "7150278", "roles": ["מפקד"], "net": ""}, {"name": "יבגני וטניק", "platoon": "soldiers1", "personalNumber": "7716386", "roles": ["לוחם"], "net": ""}, {"name": "נועם נגר", "platoon": "soldiers1", "personalNumber": "5738943", "roles": ["לוחם"], "net": "נהג"}, {"name": "אסתי מילשטיין", "platoon": "soldiers1", "personalNumber": "8566102", "roles": ["לוחם"], "net": "חמ\"ל"}, {"name": "שרה סילברברג", "platoon": "soldiers1", "personalNumber": "8729332", "roles": ["לוחם"], "net": ""}, {"name": "יערה גל שנהב", "platoon": "soldiers1", "personalNumber": "8659391", "roles": ["לוחם"], "net": "חובש"}, {"name": "יגאל קישילב", "platoon": "soldiers1", "personalNumber": "7256590", "roles": ["ממ"], "net": ""}, {"name": "יוסף מזראיב", "platoon": "soldiers1", "personalNumber": "9312664", "roles": ["לוחם"], "net": "נהג"}, {"name": "אשלי דהן", "platoon": "soldiers2", "personalNumber": "9177543", "roles": ["לוחם"], "net": ""}, {"name": "דניאל ארונוב", "platoon": "soldiers2", "personalNumber": "8664559", "roles": ["לוחם"], "net": ""}, {"name": "אופיר שוהם", "platoon": "soldiers2", "personalNumber": "8368134", "roles": ["לוחם"], "net": "נהג"}, {"name": "איתמר כהן", "platoon": "soldiers2", "personalNumber": "8422339", "roles": ["לוחם"], "net": "נהג"}, {"name": "רביע אמון", "platoon": "soldiers2", "personalNumber": "9015523", "roles": ["לוחם"], "net": "נהג"}, {"name": "בוריס רטנר", "platoon": "soldiers2", "personalNumber": "9676337", "roles": ["לוחם"], "net": "קלע"}, {"name": "יבגני פניוק", "platoon": "soldiers2", "personalNumber": "6474678", "roles": ["לוחם"], "net": ""}, {"name": "תומר דנוס", "platoon": "soldiers2", "personalNumber": "9231481", "roles": ["לוחם"], "net": "חובש"}, {"name": "ליאור זליצ'ונוק", "platoon": "soldiers2", "personalNumber": "9128795", "roles": ["לוחם"], "net": ""}, {"name": "ליאור בן דוד", "platoon": "soldiers2", "personalNumber": "8787860", "roles": ["לוחם"], "net": "1"}, {"name": "איתמר רז", "platoon": "soldiers2", "personalNumber": "9116033", "roles": ["לוחם"], "net": "חובש"}, {"name": "עמית כליפה", "platoon": "soldiers2", "personalNumber": "8389381", "roles": ["לוחם"], "net": ""}, {"name": "שחר פניק", "platoon": "soldiers2", "personalNumber": "7193222", "roles": ["ממ"], "net": ""}, {"name": "עמית רוזנר", "platoon": "soldiers2", "personalNumber": "8733656", "roles": ["ממ"], "net": ""}, {"name": "יניב אוחיון", "platoon": "soldiers2", "personalNumber": "7425043", "roles": ["מפקד"], "net": "נהג"}, {"name": "עילאי קליינמן", "platoon": "soldiers2", "personalNumber": "", "roles": ["לוחם"], "net": ""}, {"name": "ליזה מירצין", "platoon": "soldiers2", "personalNumber": "", "roles": ["לוחם"], "net": ""}, {"name": "עדי עובדיה", "platoon": "soldiers2", "personalNumber": "", "roles": ["לוחם"], "net": ""}, {"name": "שליו משה", "platoon": "soldiers2", "personalNumber": "8785284", "roles": ["לוחם"], "net": ""}, {"name": "עקיבא גרוזמן", "platoon": "soldiers2", "personalNumber": "9231352", "roles": ["לוחם"], "net": "חמ\"ל"}, {"name": "בתאל כחלון", "platoon": "soldiers2", "personalNumber": "8349960", "roles": ["לוחם"], "net": ""}, {"name": "נעה דיין", "platoon": "soldiers3", "personalNumber": "9268678", "roles": ["לוחם"], "net": ""}, {"name": "אשלי יו-גיטניו", "platoon": "soldiers3", "personalNumber": "9230908", "roles": ["לוחם"], "net": "חובש"}, {"name": "נועם צרפתי", "platoon": "soldiers3", "personalNumber": "9060832", "roles": ["לוחם"], "net": "מטול"}, {"name": "יאיר שעשוע", "platoon": "soldiers3", "personalNumber": "9101363", "roles": ["לוחם"], "net": "נהג"}, {"name": "פבל סיקוזה", "platoon": "soldiers3", "personalNumber": "6942867", "roles": ["לוחם"], "net": "קלע"}, {"name": "אלה לטקין", "platoon": "soldiers3", "personalNumber": "9169611", "roles": ["לוחם"], "net": ""}, {"name": "יעקב בריס", "platoon": "soldiers3", "personalNumber": "5972351", "roles": ["לוחם"], "net": ""}, {"name": "לינוי שוורץ", "platoon": "soldiers3", "personalNumber": "9186842", "roles": ["לוחם"], "net": ""}, {"name": "בוריס טפליצקי", "platoon": "soldiers3", "personalNumber": "8503335", "roles": ["לוחם"], "net": "מטול"}, {"name": "גיא רוימי", "platoon": "soldiers3", "personalNumber": "8698214", "roles": ["לוחם"], "net": "קלע"}, {"name": "ניר שדילוב", "platoon": "soldiers3", "personalNumber": "9225641", "roles": ["לוחם"], "net": ""}, {"name": "טופז כהן", "platoon": "soldiers3", "personalNumber": "9279439", "roles": ["לוחם"], "net": ""}, {"name": "גיא נואמה", "platoon": "soldiers3", "personalNumber": "8774510", "roles": ["לוחם"], "net": ""}, {"name": "גל חיים", "platoon": "soldiers1", "personalNumber": "8770787", "roles": ["מ\"מ"], "net": ""}, {"name": "דניה מיהילוביץ'", "platoon": "soldiers1", "personalNumber": "9945506", "roles": ["לוחם"], "net": ""}, {"name": "אליה בן שבו", "platoon": "soldiers3", "personalNumber": "9079474", "roles": ["לוחם"], "net": ""}, {"name": "איליה רוזנבליום", "platoon": "soldiers3", "personalNumber": "8362609", "roles": ["ממ"], "net": ""}, {"name": "איתן נפתלי", "platoon": "soldiers3", "personalNumber": "9676740", "roles": ["לוחם"], "net": ""}, {"name": "עדי זייתוני", "platoon": "soldiers3", "personalNumber": "9124062", "roles": ["לוחם"], "net": ""}, {"name": "דימה בבנקו", "platoon": "soldiers3", "personalNumber": "", "roles": ["לוחם"], "net": "מהנדס"}, {"name": "רום בטיטו", "platoon": "soldiers3", "personalNumber": "8638238", "roles": ["ממ"], "net": ""}, {"name": "אורי לוי", "platoon": "soldiers3", "personalNumber": "8794280", "roles": ["מפקד"], "net": ""}, {"name": "אופק טובי", "platoon": "soldiers3", "personalNumber": "8375054", "roles": ["מפקד משימה"], "net": "רחפן"}, {"name": "אלמוג פרץ", "platoon": "soldiers3", "personalNumber": "8446043", "roles": ["לוחם"], "net": ""}, {"name": "יוליה שצרקוב", "platoon": "soldiers3", "personalNumber": "8149968", "roles": ["לוחם"], "net": ""}, {"name": "שחר זגורי", "platoon": "pluga", "personalNumber": "", "roles": ["לוחם"], "net": "קשר"}, {"name": "שיר דואניס", "platoon": "pluga", "personalNumber": "", "roles": ["לוחם"], "net": "קשר"}, {"name": "אלירן שמעונוב", "platoon": "soldiers3", "personalNumber": "8216542", "roles": ["ממ"], "net": ""}], "aftar": {"2026_05_20": ["שובל כהן", "אלכסי מירסון", "אנה בלינסקי", "פדריקו", "קרן סבג", "שקד לוי", "בן זהרי", "חיים בריס", "נועם נגר", "שרה סילברברג", "יגאל קישילב", "יוסף מזראיב", "ליאור בן דוד", "שחר פניק", "עמית רוזנר", "יניב אוחיון", "נעה דיין", "יעקב בריס", "גיא נואמה", "אליה בן שבו", "איליה רוזנבליום", "רום בטיטו", "אופק טובי", "אלמוג פרץ", "אלירן שמעונוב"], "2026_05_21": ["שובל כהן", "פדריקו", "קרן סבג", "חיים בריס", "נועם נגר", "אסתי מילשטיין", "יגאל קישילב", "יוסף מזראיב", "איתמר כהן", "יניב אוחיון", "עילאי קליינמן", "ליזה מירצין", "עדי עובדיה", "שליו משה", "אשלי יו-גיטניו", "נועם צרפתי", "פבל סיקוזה", "אלה לטקין", "יעקב בריס", "לינוי שוורץ", "בוריס טפליצקי", "ניר שדילוב", "אליה בן שבו", "איליה רוזנבליום", "רום בטיטו", "אורי לוי", "אופק טובי", "אלמוג פרץ", "יוליה שצרקוב", "אלירן שמעונוב"], "2026_05_22": ["שובל כהן", "פדריקו", "קרן סבג", "חיים בריס", "אסתי מילשטיין", "יגאל קישילב", "יוסף מזראיב", "איתמר כהן", "יניב אוחיון", "עילאי קליינמן", "ליזה מירצין", "עדי עובדיה", "שליו משה", "אשלי יו-גיטניו", "נועם צרפתי", "פבל סיקוזה", "אלה לטקין", "יעקב בריס", "לינוי שוורץ", "בוריס טפליצקי", "ניר שדילוב", "טופז כהן", "אליה בן שבו", "רום בטיטו", "אורי לוי", "אלמוג פרץ", "יוליה שצרקוב", "אלירן שמעונוב"], "2026_05_31": ["שובל כהן", "אלכסי מירסון", "אנה בלינסקי", "פדריקו", "אנטוני מישצ'נקו", "שקד לוי", "בן זהרי", "אור גל", "חיים בריס", "אופיר שמולביץ", "נועם נגר", "שרה סילברברג", "יערה גל שנהב", "יגאל קישילב", "אשלי דהן", "איתמר כהן", "רביע אמון", "תומר דנוס", "ליאור זליצ'ונוק", "ליאור בן דוד", "שחר פניק", "יניב אוחיון", "שליו משה", "בתאל כחלון", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "רום בטיטו", "יוליה שצרקוב"], "2026_06_01": ["שובל כהן", "אלכסי מירסון", "אנה בלינסקי", "פדריקו", "אנטוני מישצ'נקו", "שקד לוי", "בן זהרי", "אור גל", "חיים בריס", "אופיר שמולביץ", "נועם נגר", "יערה גל שנהב", "יגאל קישילב", "אשלי דהן", "דניאל ארונוב", "איתמר כהן", "ליאור זליצ'ונוק", "ליאור בן דוד", "שחר פניק", "יניב אוחיון", "שליו משה", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "איליה רוזנבליום"], "2026_06_02": ["שובל כהן", "גיא ברוק", "אלכסי מירסון", "ג'יבלי", "אנה בלינסקי", "פדריקו", "קרן סבג", "אנטוני מישצ'נקו", "שקד לוי", "בן זהרי", "אור גל", "חיים בריס", "אופיר שמולביץ", "נועם נגר", "יערה גל שנהב", "יגאל קישילב", "אשלי דהן", "ליאור זליצ'ונוק", "ליאור בן דוד", "שחר פניק", "יניב אוחיון", "שליו משה", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "איליה רוזנבליום"], "2026_06_03": ["שובל כהן", "גיא ברוק", "אלכסי מירסון", "אנה בלינסקי", "קרן סבג", "אנטוני מישצ'נקו", "שקד לוי", "צוף ירקוני", "בן זהרי", "אור גל", "חיים בריס", "אופיר שמולביץ", "נועם נגר", "שרה סילברברג", "יגאל קישילב", "אשלי דהן", "ליאור זליצ'ונוק", "ליאור בן דוד", "שחר פניק", "יניב אוחיון", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "אליה בן שבו", "איליה רוזנבליום", "אופק טובי", "אלירן שמעונוב"], "2026_06_04": ["שובל כהן", "גיא ברוק", "אלכסי מירסון", "אנה בלינסקי", "אנטוני מישצ'נקו", "שקד לוי", "צוף ירקוני", "בן זהרי", "אור גל", "נועם נגר", "אסתי מילשטיין", "שרה סילברברג", "יגאל קישילב", "אשלי דהן", "איתמר כהן", "שחר פניק", "יניב אוחיון", "ניר שדילוב", "טופז כהן", "אליה בן שבו", "רום בטיטו", "אופק טובי"], "2026_06_15": ["שובל כהן", "אלכסי מירסון", "אנה בלינסקי", "פדריקו", "קרן סבג", "אנטוני מישצ'נקו", "שקד לוי", "בן זהרי", "חיים בריס", "אופיר שמולביץ", "נועם נגר", "יערה גל שנהב", "יגאל קישילב", "יוסף מזראיב", "אשלי דהן", "איתמר כהן", "שחר פניק", "יניב אוחיון", "שליו משה", "עקיבא גרוזמן", "נעה דיין", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "אליה בן שבו", "רום בטיטו", "אופק טובי"], "2026_06_16": ["שובל כהן", "גיא ברוק", "אלכסי מירסון", "אנה בלינסקי", "פדריקו", "קרן סבג", "אנטוני מישצ'נקו", "שקד לוי", "צוף ירקוני", "בן זהרי", "חיים בריס", "אופיר שמולביץ", "נועם נגר", "יערה גל שנהב", "יגאל קישילב", "אשלי דהן", "איתמר רז", "יניב אוחיון", "שליו משה", "עקיבא גרוזמן", "נעה דיין", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "אליה בן שבו", "אופק טובי"], "2026_06_17": ["שובל כהן", "גיא ברוק", "אלכסי מירסון", "אנה בלינסקי", "פדריקו", "קרן סבג", "אנטוני מישצ'נקו", "שקד לוי", "צוף ירקוני", "בן זהרי", "אור גל", "חיים בריס", "אופיר שמולביץ", "נועם נגר", "יערה גל שנהב", "יגאל קישילב", "אשלי דהן", "איתמר רז", "יניב אוחיון", "עקיבא גרוזמן", "בתאל כחלון", "נעה דיין", "נועם צרפתי", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "אליה בן שבו", "אופק טובי"], "2026_06_05": ["גיא ברוק", "יבגני וטניק", "נועם נגר", "אסתי מילשטיין", "שרה סילברברג", "יגאל קישילב", "אופיר שוהם", "איתמר כהן", "רביע אמון", "יבגני פניוק", "תומר דנוס", "איתמר רז", "עמית כליפה", "שחר פניק", "עמית רוזנר", "יניב אוחיון", "עקיבא גרוזמן", "פבל סיקוזה", "ניר שדילוב", "אליה בן שבו", "איליה רוזנבליום", "רום בטיטו", "יוליה שצרקוב"], "2026_06_10": ["גיא ברוק", "יבגני וטניק", "נועם נגר", "שרה סילברברג", "יגאל קישילב", "יוסף מזראיב", "אשלי דהן", "דניאל ארונוב", "אופיר שוהם", "בוריס רטנר", "יבגני פניוק", "תומר דנוס", "ליאור זליצ'ונוק", "עמית כליפה", "עמית רוזנר", "יניב אוחיון", "בתאל כחלון", "נעה דיין", "אשלי יו-גיטניו", "נועם צרפתי", "פבל סיקוזה", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "אליה בן שבו", "איליה רוזנבליום", "אלירן שמעונוב"], "2026_06_11": ["גיא ברוק", "אור גל", "נועם נגר", "שרה סילברברג", "יערה גל שנהב", "יגאל קישילב", "אשלי דהן", "בוריס רטנר", "ליאור בן דוד", "יניב אוחיון", "אשלי יו-גיטניו", "נועם צרפתי", "גיא רוימי", "ניר שדילוב", "אליה בן שבו", "רום בטיטו", "אלמוג פרץ", "אלירן שמעונוב"], "2026_06_12": ["גיא ברוק", "נועם נגר", "יערה גל שנהב", "יגאל קישילב", "בוריס רטנר", "יניב אוחיון", "עילאי קליינמן", "ליזה מירצין", "עדי עובדיה", "נעה דיין", "אשלי יו-גיטניו", "יאיר שעשוע", "אלה לטקין", "יעקב בריס", "לינוי שוורץ", "בוריס טפליצקי", "ניר שדילוב", "טופז כהן", "אליה בן שבו", "רום בטיטו", "אורי לוי", "אלמוג פרץ", "יוליה שצרקוב", "אלירן שמעונוב"], "2026_06_18": ["גיא ברוק", "אלכסי מירסון", "אנה בלינסקי", "פדריקו", "קרן סבג", "אנטוני מישצ'נקו", "שקד לוי", "צוף ירקוני", "בן זהרי", "אור גל", "חיים בריס", "אופיר שמולביץ", "נועם נגר", "יערה גל שנהב", "אשלי דהן", "איתמר רז", "עמית רוזנר", "יניב אוחיון", "עקיבא גרוזמן", "בתאל כחלון", "נעה דיין", "נועם צרפתי", "גיא רוימי", "ניר שדילוב", "אליה בן שבו", "רום בטיטו"], "2026_06_26": ["גיא ברוק", "אנטוני מישצ'נקו", "צוף ירקוני", "נועם נגר", "יערה גל שנהב", "עמית רוזנר", "יניב אוחיון", "שליו משה", "עקיבא גרוזמן", "נעה דיין", "ניר שדילוב", "אליה בן שבו", "רום בטיטו", "יוליה שצרקוב"], "2026_06_27": ["גיא ברוק", "אנטוני מישצ'נקו", "צוף ירקוני", "נועם נגר", "שרה סילברברג", "יוסף מזראיב", "עמית רוזנר", "יניב אוחיון", "עקיבא גרוזמן", "נעה דיין", "ניר שדילוב", "אליה בן שבו", "רום בטיטו", "יוליה שצרקוב"], "2026_06_19": ["ג'יבלי", "צוף ירקוני", "אור גל", "נועם נגר", "יערה גל שנהב", "יניב אוחיון", "עילאי קליינמן", "ליזה מירצין", "עדי עובדיה", "בתאל כחלון", "נעה דיין", "אשלי יו-גיטניו", "נועם צרפתי", "יאיר שעשוע", "אלה לטקין", "יעקב בריס", "לינוי שוורץ", "בוריס טפליצקי", "ניר שדילוב", "אליה בן שבו", "איליה רוזנבליום", "רום בטיטו", "אורי לוי", "אלמוג פרץ", "יוליה שצרקוב", "אלירן שמעונוב"], "2026_06_20": ["ג'יבלי", "צוף ירקוני", "נועם נגר", "יערה גל שנהב", "יניב אוחיון", "עילאי קליינמן", "ליזה מירצין", "עדי עובדיה", "בתאל כחלון", "נעה דיין", "אשלי יו-גיטניו", "נועם צרפתי", "יאיר שעשוע", "אלה לטקין", "יעקב בריס", "לינוי שוורץ", "בוריס טפליצקי", "ניר שדילוב", "אליה בן שבו", "איליה רוזנבליום", "רום בטיטו", "אורי לוי", "אלמוג פרץ", "יוליה שצרקוב", "אלירן שמעונוב"], "2026_05_30": ["פדריקו", "נועם נגר", "שרה סילברברג", "יגאל קישילב", "יוסף מזראיב", "רביע אמון", "ליאור זליצ'ונוק", "עמית רוזנר", "יניב אוחיון", "עילאי קליינמן", "ליזה מירצין", "עדי עובדיה", "בתאל כחלון", "נעה דיין", "אשלי יו-גיטניו", "נועם צרפתי", "יאיר שעשוע", "אלה לטקין", "יעקב בריס", "לינוי שוורץ", "בוריס טפליצקי", "ניר שדילוב", "טופז כהן", "רום בטיטו", "אורי לוי", "אופק טובי", "אלמוג פרץ", "יוליה שצרקוב", "אלירן שמעונוב"], "2026_06_08": ["קרן סבג", "אופיר שמולביץ", "יבגני וטניק", "נועם נגר", "שרה סילברברג", "יערה גל שנהב", "יגאל קישילב", "דניאל ארונוב", "אופיר שוהם", "איתמר כהן", "רביע אמון", "בוריס רטנר", "יבגני פניוק", "תומר דנוס", "ליאור זליצ'ונוק", "עמית כליפה", "שחר פניק", "יניב אוחיון", "שליו משה", "בתאל כחלון", "נעה דיין", "פבל סיקוזה", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "אליה בן שבו", "איליה רוזנבליום"], "2026_06_30": ["קרן סבג", "אנטוני מישצ'נקו", "שקד לוי", "צוף ירקוני", "נועם נגר", "אסתי מילשטיין", "שרה סילברברג", "יוסף מזראיב", "תומר דנוס", "איתמר רז", "עמית כליפה", "יניב אוחיון", "נעה דיין", "לינוי שוורץ", "ניר שדילוב", "גיא נואמה", "אליה בן שבו"], "2026_06_21": ["אנטוני מישצ'נקו", "צוף ירקוני", "נועם נגר", "אסתי מילשטיין", "יערה גל שנהב", "איתמר רז", "עמית רוזנר", "יניב אוחיון", "עילאי קליינמן", "ליזה מירצין", "עדי עובדיה", "בתאל כחלון", "נעה דיין", "אשלי יו-גיטניו", "יאיר שעשוע", "לינוי שוורץ", "בוריס טפליצקי", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "אליה בן שבו", "איליה רוזנבליום", "רום בטיטו", "אורי לוי", "אלמוג פרץ", "אלירן שמעונוב"], "2026_06_28": ["אנטוני מישצ'נקו", "צוף ירקוני", "נועם נגר", "שרה סילברברג", "יוסף מזראיב", "עמית רוזנר", "יניב אוחיון", "עקיבא גרוזמן", "נעה דיין", "ניר שדילוב", "גיא נואמה", "אליה בן שבו"], "2026_06_29": ["אנטוני מישצ'נקו", "שקד לוי", "צוף ירקוני", "נועם נגר", "אסתי מילשטיין", "שרה סילברברג", "יוסף מזראיב", "שחר פניק", "עמית רוזנר", "יניב אוחיון", "עקיבא גרוזמן", "נעה דיין", "ניר שדילוב", "גיא נואמה", "אליה בן שבו"], "2026_05_28": ["שקד לוי", "נועם נגר", "שרה סילברברג", "יגאל קישילב", "יוסף מזראיב", "רביע אמון", "עמית רוזנר", "יניב אוחיון", "עילאי קליינמן", "ליזה מירצין", "עדי עובדיה", "בתאל כחלון", "נעה דיין", "אשלי יו-גיטניו", "נועם צרפתי", "יאיר שעשוע", "אלה לטקין", "לינוי שוורץ", "בוריס טפליצקי", "ניר שדילוב", "טופז כהן", "איליה רוזנבליום", "אורי לוי", "אלמוג פרץ", "יוליה שצרקוב", "אלירן שמעונוב"], "2026_07_01": ["שקד לוי", "צוף ירקוני", "נועם נגר", "אסתי מילשטיין", "עמית כליפה", "יניב אוחיון", "נעה דיין", "לינוי שוורץ", "ניר שדילוב", "גיא נואמה", "אליה בן שבו", "רום בטיטו"], "2026_05_24": ["צוף ירקוני", "נועם נגר", "אסתי מילשטיין", "יערה גל שנהב", "יגאל קישילב", "יוסף מזראיב", "איתמר רז", "יניב אוחיון", "שליו משה", "גיא רוימי", "ניר שדילוב", "גיא נואמה"], "2026_05_25": ["צוף ירקוני", "אופיר שמולביץ", "יבגני וטניק", "נועם נגר", "יערה גל שנהב", "יגאל קישילב", "דניאל ארונוב", "אופיר שוהם", "בוריס רטנר", "יבגני פניוק", "תומר דנוס", "ליאור זליצ'ונוק", "ליאור בן דוד", "איתמר רז", "עמית כליפה", "שחר פניק", "יניב אוחיון", "שליו משה", "עקיבא גרוזמן", "יאיר שעשוע", "פבל סיקוזה", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "אליה בן שבו", "איליה רוזנבליום", "אופק טובי"], "2026_05_26": ["צוף ירקוני", "יבגני וטניק", "נועם נגר", "יערה גל שנהב", "יגאל קישילב", "דניאל ארונוב", "אופיר שוהם", "בוריס רטנר", "יבגני פניוק", "תומר דנוס", "ליאור זליצ'ונוק", "ליאור בן דוד", "איתמר רז", "עמית כליפה", "יניב אוחיון", "עקיבא גרוזמן", "יאיר שעשוע", "פבל סיקוזה", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "איליה רוזנבליום", "רום בטיטו", "אופק טובי"], "2026_05_27": ["צוף ירקוני", "נועם נגר", "יגאל קישילב", "יוסף מזראיב", "רביע אמון", "עמית רוזנר", "יניב אוחיון", "עקיבא גרוזמן", "בתאל כחלון", "נעה דיין", "יאיר שעשוע", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "איליה רוזנבליום"], "2026_06_22": ["צוף ירקוני", "אופיר שמולביץ", "יבגני וטניק", "נועם נגר", "אסתי מילשטיין", "שרה סילברברג", "יערה גל שנהב", "יגאל קישילב", "אופיר שוהם", "איתמר כהן", "רביע אמון", "בוריס רטנר", "יבגני פניוק", "תומר דנוס", "ליאור בן דוד", "איתמר רז", "עמית כליפה", "עמית רוזנר", "יניב אוחיון", "בתאל כחלון", "נעה דיין", "פבל סיקוזה", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "אליה בן שבו", "רום בטיטו"], "2026_06_23": ["צוף ירקוני", "יבגני וטניק", "נועם נגר", "אסתי מילשטיין", "שרה סילברברג", "יערה גל שנהב", "דניאל ארונוב", "אופיר שוהם", "איתמר כהן", "רביע אמון", "בוריס רטנר", "יבגני פניוק", "תומר דנוס", "ליאור זליצ'ונוק", "ליאור בן דוד", "איתמר רז", "עמית כליפה", "שחר פניק", "עמית רוזנר", "יניב אוחיון", "נעה דיין", "פבל סיקוזה", "גיא רוימי", "ניר שדילוב", "טופז כהן", "גיא נואמה", "אליה בן שבו", "רום בטיטו"], "2026_06_24": ["צוף ירקוני", "יבגני וטניק", "נועם נגר", "אסתי מילשטיין", "שרה סילברברג", "יערה גל שנהב", "דניאל ארונוב", "אופיר שוהם", "איתמר כהן", "רביע אמון", "בוריס רטנר", "יבגני פניוק", "תומר דנוס", "ליאור זליצ'ונוק", "איתמר רז", "עמית כליפה", "שחר פניק", "עמית רוזנר", "יניב אוחיון", "נעה דיין", "פבל סיקוזה", "גיא רוימי", "ניר שדילוב", "טופז כהן", "גיא נואמה", "אליה בן שבו"], "2026_06_25": ["צוף ירקוני", "אור גל", "יבגני וטניק", "נועם נגר", "יערה גל שנהב", "יגאל קישילב", "דניאל ארונוב", "אופיר שוהם", "איתמר כהן", "רביע אמון", "בוריס רטנר", "יבגני פניוק", "תומר דנוס", "ליאור זליצ'ונוק", "איתמר רז", "עמית כליפה", "שחר פניק", "יניב אוחיון", "שליו משה", "נעה דיין", "פבל סיקוזה", "גיא רוימי", "ניר שדילוב", "טופז כהן", "אליה בן שבו"], "2026_05_23": ["אור גל", "חיים בריס", "נועם נגר", "אסתי מילשטיין", "יגאל קישילב", "יוסף מזראיב", "איתמר כהן", "יניב אוחיון", "עילאי קליינמן", "ליזה מירצין", "עדי עובדיה", "שליו משה", "אשלי יו-גיטניו", "נועם צרפתי", "פבל סיקוזה", "אלה לטקין", "יעקב בריס", "לינוי שוורץ", "בוריס טפליצקי", "ניר שדילוב", "טופז כהן", "רום בטיטו", "אורי לוי", "אלמוג פרץ", "יוליה שצרקוב", "אלירן שמעונוב"], "2026_06_06": ["יבגני וטניק", "נועם נגר", "אסתי מילשטיין", "שרה סילברברג", "יגאל קישילב", "אופיר שוהם", "איתמר כהן", "רביע אמון", "יבגני פניוק", "תומר דנוס", "איתמר רז", "עמית כליפה", "שחר פניק", "עמית רוזנר", "יניב אוחיון", "עקיבא גרוזמן", "בתאל כחלון", "פבל סיקוזה", "יעקב בריס", "ניר שדילוב", "אליה בן שבו", "רום בטיטו", "יוליה שצרקוב"], "2026_06_07": ["יבגני וטניק", "נועם נגר", "אסתי מילשטיין", "יערה גל שנהב", "יגאל קישילב", "דניאל ארונוב", "אופיר שוהם", "איתמר כהן", "רביע אמון", "יבגני פניוק", "תומר דנוס", "איתמר רז", "עמית כליפה", "שחר פניק", "יניב אוחיון", "שליו משה", "עקיבא גרוזמן", "בתאל כחלון", "נעה דיין", "פבל סיקוזה", "יעקב בריס", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "אליה בן שבו"], "2026_06_09": ["יבגני וטניק", "נועם נגר", "שרה סילברברג", "יערה גל שנהב", "יגאל קישילב", "יוסף מזראיב", "דניאל ארונוב", "אופיר שוהם", "איתמר כהן", "בוריס רטנר", "יבגני פניוק", "תומר דנוס", "ליאור זליצ'ונוק", "עמית כליפה", "עמית רוזנר", "יניב אוחיון", "שליו משה", "בתאל כחלון", "נעה דיין", "פבל סיקוזה", "גיא רוימי", "ניר שדילוב", "גיא נואמה", "אליה בן שבו", "איליה רוזנבליום"], "2026_05_29": ["נועם נגר", "שרה סילברברג", "יגאל קישילב", "יוסף מזראיב", "רביע אמון", "ליאור זליצ'ונוק", "עמית רוזנר", "יניב אוחיון", "עילאי קליינמן", "ליזה מירצין", "עדי עובדיה", "בתאל כחלון", "נעה דיין", "אשלי יו-גיטניו", "נועם צרפתי", "יאיר שעשוע", "אלה לטקין", "יעקב בריס", "לינוי שוורץ", "בוריס טפליצקי", "ניר שדילוב", "טופז כהן", "רום בטיטו", "אורי לוי", "אופק טובי", "אלמוג פרץ", "יוליה שצרקוב", "אלירן שמעונוב"], "2026_06_13": ["נועם נגר", "שרה סילברברג", "יערה גל שנהב", "יגאל קישילב", "יוסף מזראיב", "בוריס רטנר", "יניב אוחיון", "עילאי קליינמן", "ליזה מירצין", "עדי עובדיה", "נעה דיין", "אשלי יו-גיטניו", "יאיר שעשוע", "אלה לטקין", "יעקב בריס", "לינוי שוורץ", "בוריס טפליצקי", "גיא רוימי", "ניר שדילוב", "טופז כהן", "אליה בן שבו", "רום בטיטו", "אורי לוי", "אלמוג פרץ", "יוליה שצרקוב", "אלירן שמעונוב"], "2026_06_14": ["נועם נגר", "שרה סילברברג", "יערה גל שנהב", "יגאל קישילב", "איתמר כהן", "יניב אוחיון", "עילאי קליינמן", "ליזה מירצין", "עדי עובדיה", "נעה דיין", "יאיר שעשוע", "לינוי שוורץ", "בוריס טפליצקי", "גיא רוימי", "ניר שדילוב", "טופז כהן", "גיא נואמה", "אליה בן שבו", "רום בטיטו", "אורי לוי", "אלמוג פרץ", "אלירן שמעונוב"]}};
 
 // === APP ===
 function App() {
@@ -3013,26 +3024,31 @@ function App() {
     const ov = (dayMissionOverrides[dayId]||{})[mission.id] || {};
     return {
       ...mission,
-      label: ms.label ?? mission.label,
-      icon: ms.icon ?? mission.icon,
-      time: ms.time ?? mission.time,
-      col: ms.col ?? mission.col,
-      roleSlots: ms.roleSlots && ms.roleSlots.length > 0 ? ms.roleSlots : (mission.roleSlots || []),
+      label: ov.label ?? ms.label ?? mission.label,
+      icon: ov.icon ?? ms.icon ?? mission.icon,
+      time: ov.time ?? ms.time ?? mission.time,
+      col: ov.col ?? ms.col ?? mission.col,
+      roleSlots: (ov.roleSlots && ov.roleSlots.length > 0) ? ov.roleSlots : (ms.roleSlots && ms.roleSlots.length > 0 ? ms.roleSlots : (mission.roleSlots || [])),
       slots: {
         commander: ov.slots_commander ?? ms.slots_commander ?? mission.slots.commander,
         soldiers: ov.slots_soldiers ?? ms.slots_soldiers ?? mission.slots.soldiers,
       },
       startH: ov.startH ?? ms.startH ?? mission.startH,
       endH: ov.endH ?? ms.endH ?? mission.endH,
-      allowedNames: ms.allowedNames ?? mission.allowedNames ?? [],
+      restHours: ov.restHours ?? ms.restHours ?? mission.restHours ?? 0,
+      lateWakeMission: ov.lateWakeMission ?? ms.lateWakeMission ?? mission.lateWakeMission,
+      excludesFromParade: ov.excludesFromParade ?? ms.excludesFromParade ?? mission.excludesFromParade,
+      allowedNames: ov.allowedNames ?? ms.allowedNames ?? mission.allowedNames ?? [],
     };
   }, [dayMissionOverrides, missionSettings]);
 
   const getPlatoonStyle = (platoon) => getPlatoonStyleFromMap(platoons, platoon);
 
-  const allMembers = Object.entries(platoons).flatMap(([pl,d]) => d.members.map(m => ({
-    name: getMemberName(m), platoon: pl, roles: getMemberRoles(m)
-  })));
+  const allMembers = Object.entries(platoons).flatMap(([pl,d]) => d.members
+    .filter(m => getMemberStatus(m) === 'active')
+    .map(m => ({
+      name: getMemberName(m), platoon: pl, roles: getMemberRoles(m)
+    })));
 
   const isMissionHiddenOnDay = React.useCallback((dayId, missionId) => (hiddenMissionsByDay[dayId]||[]).includes(missionId), [hiddenMissionsByDay]);
 
@@ -3058,8 +3074,8 @@ function App() {
   const { blocked, blockedReasons } = useMemo(() => {
     if (!mission) return { blocked: new Set(), blockedReasons: {} };
     const missionForDay = getEffectiveMission(mission, activeDay);
-    return getBlockedNames(allAss, activeDay, missionForDay, missionSettings, platoons, restExemptions);
-  }, [allAss, activeDay, activeMission, missionSettings, platoons, restExemptions, getEffectiveMission]);
+    return getBlockedNames(allAss, activeDay, missionForDay, missionSettings, platoons, restExemptions, customMissions);
+  }, [allAss, activeDay, activeMission, missionSettings, platoons, restExemptions, getEffectiveMission, customMissions]);
 
   const gimelThisDay = useMemo(() => new Set([...(dayAss["gimel"]?.soldiers||[])].filter(Boolean).map(p=>p.name)), [dayAss]);
 
@@ -3111,17 +3127,14 @@ function App() {
       const nextDayIdx = DAY_IDS.indexOf(activeDay) + 1;
       const nextAftar = new Set(nextDayIdx<DAY_IDS.length ? (aftarByDay[DAY_IDS[nextDayIdx]]||[]) : []);
       const allCands = Object.entries(platoons).flatMap(([k,p]) =>
-        p.members.filter(rawM => (getMemberStatus ? getMemberStatus(rawM) : 'active') !== 'absent').map(rawM => {
-          const status = getMemberStatus ? getMemberStatus(rawM) : 'active';
-          return {
-            name: getMemberName(rawM),
-            platoon: k,
-            roles: getMemberRoles(rawM),
-            blocked: getMemberBlocked(rawM),
-            isCmdPlat: isCmdPlatoon(k),
-            statusBlocked: (typeof getStatusInfo === 'function') ? getStatusInfo(status).blocks : false,
-          };
-        })
+        p.members.filter(rawM => getMemberStatus(rawM) === 'active').map(rawM => ({
+          name: getMemberName(rawM),
+          platoon: k,
+          roles: getMemberRoles(rawM),
+          blocked: getMemberBlocked(rawM),
+          isCmdPlat: isCmdPlatoon(k),
+          statusBlocked: false,
+        }))
       );
       const priorityOrder = (mid) => {
         if (mid === "katzin") return 0;
@@ -3141,7 +3154,7 @@ function App() {
         const ass = c[activeDay][m.id] = c[activeDay][m.id] || {commanders:Array(ms.commander).fill(null), soldiers:Array(ms.soldiers).fill(null)};
         while (ass.commanders.length < ms.commander) ass.commanders.push(null);
         while (ass.soldiers.length < ms.soldiers) ass.soldiers.push(null);
-        const restBlocked = getBlockedNames(c, activeDay, m, missionSettings, platoons, restExemptions).blocked;
+        const restBlocked = getBlockedNames(c, activeDay, m, missionSettings, platoons, restExemptions, customMissions).blocked;
         // Night-shift-before-home rule: if soldier goes home tomorrow, don't assign to night missions (starting >=20:00)
         const isNightMission = (m.startH || 0) >= 20 || (m.endH || 0) > 24;
         const baseCanUse = (p) => {
@@ -4436,32 +4449,58 @@ function App() {
     // 3. מ"מ + מפקדת פלוגה - מוסתרים לחלוטין מהמסך
 
     const da = allAss[activeDay] || {};
+    const prevDayIdxP = DAY_IDS.indexOf(activeDay) - 1;
+    const prevDayIdP = prevDayIdxP >= 0 ? DAY_IDS[prevDayIdxP] : null;
+    const daPrev = prevDayIdP ? (allAss[prevDayIdP] || {}) : {};
 
-    // משימות שהוגדרו כ"לא במסדר בוקר"
-    const excludedMissionIds = new Set();
-    [...MISSION_DEFS, ...customMissions].forEach(m => {
-      const dayOv = (dayMissionOverrides[activeDay]||{})[m.id] || {};
-      if (dayOv.lateWakeMission ?? missionSettings[m.id]?.lateWakeMission ?? m.lateWakeMission) {
-        excludedMissionIds.add(m.id);
-      }
-    });
+    // משימה מוחרגת מהמסדר אם:
+    // 1. מסומנת ידנית כ"לא במסדר בוקר" (lateWakeMission/excludesFromParade)
+    // 2. מתקיימת ביום הנוכחי ומתחילה לפני 09:00 (startH < 9)
+    // 3. מתקיימת ביום הקודם ומסתיימת אחרי 20:00 (endH > 20)
+    const allMissionsList = [...MISSION_DEFS, ...customMissions];
 
-    // חיילים שמשובצים למשימות מסומנות (= לא במסדר)
+    const getMissionEffective = (m, dayId) => {
+      const ov = (dayMissionOverrides[dayId]||{})[m.id] || {};
+      const ms = missionSettings[m.id] || {};
+      return {
+        startH: ov.startH ?? ms.startH ?? m.startH ?? 0,
+        endH: ov.endH ?? ms.endH ?? m.endH ?? 0,
+        label: ov.label ?? ms.label ?? m.label,
+        lateWake: ov.lateWakeMission ?? ms.lateWakeMission ?? m.lateWakeMission ?? false,
+        excludes: ov.excludesFromParade ?? ms.excludesFromParade ?? m.excludesFromParade ?? false,
+      };
+    };
+
+    // חיילים שמשובצים למשימות שמוחרגות מהמסדר
     const inExcludedMission = new Map(); // name → mission label
-    Object.entries(da).forEach(([mid, ass]) => {
-      if (!excludedMissionIds.has(mid)) return;
-      const m = [...MISSION_DEFS, ...customMissions].find(x => x.id === mid);
-      const label = (missionSettings[mid]?.label) || m?.label || mid;
+
+    // בדיקת משימות יום נוכחי: startH < 9
+    allMissionsList.forEach(m => {
+      const eff = getMissionEffective(m, activeDay);
+      const isExcluded = eff.lateWake || eff.excludes || eff.startH < 9;
+      if (!isExcluded) return;
+      const ass = da[m.id]; if (!ass) return;
       [...(ass.commanders||[]),...(ass.soldiers||[])].filter(Boolean).forEach(p => {
-        if (!inExcludedMission.has(p.name)) inExcludedMission.set(p.name, label);
+        if (!inExcludedMission.has(p.name)) inExcludedMission.set(p.name, eff.label);
       });
     });
 
+    // בדיקת משימות יום קודם: endH > 20 (מסיימות אחרי 20:00 = עדיין רצות בלילה/בוקר)
+    if (prevDayIdP) {
+      allMissionsList.forEach(m => {
+        const eff = getMissionEffective(m, prevDayIdP);
+        const isExcluded = eff.lateWake || eff.excludes || eff.endH > 20;
+        if (!isExcluded) return;
+        const ass = daPrev[m.id]; if (!ass) return;
+        [...(ass.commanders||[]),...(ass.soldiers||[])].filter(Boolean).forEach(p => {
+          if (!inExcludedMission.has(p.name)) inExcludedMission.set(p.name, eff.label + ' (אתמול)');
+        });
+      });
+    }
+
     // בבית היום / אתמול
     const aftarToday = new Set(aftarByDay[activeDay]||[]);
-    const prevDayIdx = DAY_IDS.indexOf(activeDay) - 1;
-    const prevDay = prevDayIdx >= 0 ? DAY_IDS[prevDayIdx] : null;
-    const aftarYesterday = new Set(prevDay ? (aftarByDay[prevDay]||[]) : []);
+    const aftarYesterday = new Set(prevDayIdP ? (aftarByDay[prevDayIdP]||[]) : []);
     // גימל היום
     const gimelToday = new Set([...(da["gimel"]?.soldiers||[])].filter(Boolean).map(p=>p.name));
 
@@ -4483,12 +4522,10 @@ function App() {
         // הסתרה מוחלטת
         if (isHiddenFromParade(k, p, roles)) return;
         // בדיקות
-        const status = getMemberStatus ? getMemberStatus(rawM) : 'active';
-        if (status === 'absent') return; // לא נוכח = לא קיים
-        const statusInfo = getStatusInfo ? getStatusInfo(status) : {blocks:false,label:'פעיל',color:'#34c77b'};
+        const status = getMemberStatus(rawM);
+        if (status !== 'active') return; // רק חיילים פעילים
         let reason = null, reasonColor = '#e67e22';
-        if (statusInfo.blocks) { reason = statusInfo.label; reasonColor = statusInfo.color; }
-        else if (aftarToday.has(name)) { reason = 'בבית'; reasonColor = '#e67e22'; }
+        if (aftarToday.has(name)) { reason = 'בבית'; reasonColor = '#e67e22'; }
         else if (aftarYesterday.has(name)) { reason = 'חוזר מהבית'; reasonColor = '#e67e22'; }
         else if (gimelToday.has(name)) { reason = 'גימלים'; reasonColor = '#ff9800'; }
         else if (inExcludedMission.has(name)) { reason = inExcludedMission.get(name); reasonColor = '#7e57c2'; }
@@ -4510,8 +4547,7 @@ function App() {
       <div className="main" style={{maxWidth:1100,margin:"0 auto",padding:"20px 16px"}}>
         <div style={{fontSize:20,fontWeight:800,marginBottom:8}}>☀️ מסדר בוקר — יום {activeDayObj?.label} {activeDayObj?.date}</div>
         <div style={{fontSize:12,color:"var(--text2)",marginBottom:18,lineHeight:1.5}}>
-          רשימה אוטומטית: חייל נמצא במסדר אם הוא לא בבית, לא בגימל, לא בחו"ל, לא משובץ למשימה שסומנה כ"לא במסדר", ולא מ"מ/מפקדת פלוגה.
-          <br/>לסימון משימות שלא נמצאות במסדר: לחץ "ערוך" על משימה → סמן "😴 לא נמצא במסדר בוקר".
+          רשימה אוטומטית: חייל נמצא במסדר אם הוא לא בבית, לא בגימל, ולא משובץ למשימה שמתקיימת בין 20:00 אתמול ל-09:00 היום. חיילים לא פעילים לא מופיעים כלל.
         </div>
 
         {/* נוכחים במסדר */}
@@ -5315,6 +5351,68 @@ function App() {
           const a = document.createElement("a"); a.href=url; a.download="תבנית_ייבוא.csv"; a.click();
           URL.revokeObjectURL(url);
         }} title="הורד תבנית CSV ריקה" style={{background:"none",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text3)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,padding:"4px 10px"}}>📋 תבנית</button>
+        <button onClick={()=>{
+          const imp = window.EXCEL_IMPORT_2026;
+          if (!imp) { alert("נתוני הייבוא לא נטענו"); return; }
+          // Build lookup of soldiers from Excel: name → {platoon, personalNumber, roles, net}
+          const impByName = {};
+          imp.soldiers.forEach(s => { impByName[s.name] = s; });
+          const impNames = new Set(imp.soldiers.map(s => s.name));
+          // Only sync platoons that appear in the Excel (soldiers1/2/3/pluga)
+          const syncedPlatoons = new Set(imp.soldiers.map(s => s.platoon));
+          let added = 0, removed = 0, updated = 0;
+          if (!window.confirm(
+            `סנכרון מגוגל דרייב (28/05/2026)\n\n` +
+            `• חיילים באקסל: ${imp.soldiers.length}\n` +
+            `• ימי חופשה: ${Object.keys(imp.aftar).length}\n\n` +
+            `הסנכרון יוסיף חיילים חדשים, ימחק חיילים שהוסרו מהאקסל, ויעדכן מספרים אישיים ותפקידים.\n\nלהמשיך?`
+          )) return;
+          setPlatoons(prev => {
+            const n = JSON.parse(JSON.stringify(prev));
+            // Only touch platoons that are managed by the Excel
+            Object.entries(n).forEach(([k, plat]) => {
+              if (!syncedPlatoons.has(k)) return;
+              // Remove soldiers not in Excel
+              const before = plat.members.length;
+              plat.members = plat.members.filter(m => {
+                const name = typeof m === 'string' ? m : m.name;
+                return impNames.has(name);
+              });
+              removed += before - plat.members.length;
+              // Update existing soldiers (personalNumber, roles)
+              plat.members = plat.members.map(m => {
+                const name = typeof m === 'string' ? m : m.name;
+                const src = impByName[name];
+                if (!src) return m;
+                const cur = typeof m === 'string' ? { name: m, roles: [], blockedMissions: [], personalNumber: '', phone: '', status: 'active' } : { ...m };
+                let changed = false;
+                if (src.personalNumber && cur.personalNumber !== src.personalNumber) { cur.personalNumber = src.personalNumber; changed = true; }
+                if (src.roles && src.roles.length && JSON.stringify(cur.roles) !== JSON.stringify(src.roles)) { cur.roles = src.roles; changed = true; }
+                if (changed) updated++;
+                return cur;
+              });
+              // Add new soldiers
+              imp.soldiers.filter(s => s.platoon === k).forEach(s => {
+                const exists = plat.members.some(m => (typeof m === 'string' ? m : m.name) === s.name);
+                if (!exists) {
+                  plat.members.push({ name: s.name, roles: s.roles, blockedMissions: [], personalNumber: s.personalNumber, phone: '', status: 'active' });
+                  added++;
+                }
+              });
+            });
+            return n;
+          });
+          // Sync aftar days (replace range 20/5–1/7 fully)
+          setAftarByDayAndSave(prev => {
+            const c = JSON.parse(JSON.stringify(prev));
+            // Clear existing data in range then set from Excel
+            Object.keys(imp.aftar).forEach(dayId => { c[dayId] = []; });
+            Object.entries(imp.aftar).forEach(([dayId, names]) => { c[dayId] = [...names]; });
+            return c;
+          });
+          alert(`✅ סנכרון הושלם!\n• נוספו: ${added} חיילים\n• נמחקו: ${removed} חיילים\n• עודכנו: ${updated} חיילים\n• חופשות: ${Object.keys(imp.aftar).length} ימים`);
+        }} style={{background:"linear-gradient(135deg,#ffd54f22,#ff980022)",border:"1.5px solid #ffd54f88",borderRadius:7,color:"#ffd54f",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"4px 12px"}}>📥 ייבוא בקשות חיילים 20/5–1/7</button>
+        <span title={`סונכרן לאחרון: ${window.EXCEL_IMPORT_2026?.synced||'לא ידוע'}\nקובץ: בקשות חיילים ראשוני 16.03.2026.xlsx\nכדי לסנכרן מחדש — אמור לClauде "עדכן חופשות מגוגל דרייב"`} style={{background:"rgba(79,156,249,0.1)",border:"1px solid rgba(79,156,249,0.3)",borderRadius:7,color:"var(--text3)",fontFamily:"Heebo,sans-serif",fontSize:10,padding:"4px 8px",cursor:"help"}}>☁️ גוגל דרייב · {window.EXCEL_IMPORT_2026?.synced||'—'}</span>
       </div>
       {view==="display" ? <DisplayView/> :
        view==="settings" ? <SettingsView/> :
@@ -5474,6 +5572,16 @@ function App() {
               </div>
               <div style={{display:"flex",gap:10,marginTop:18,paddingTop:14,borderTop:"1px solid var(--border)"}}>
                 <button onClick={saveAndClose} style={btn({background:"var(--green)",color:"#fff",flex:2,fontWeight:800,padding:"10px",fontSize:14})}>✓ שמור ליום זה בלבד</button>
+                <button onClick={()=>{
+                  if (!window.confirm(`להסתיר את "${m.label}" ביום ${activeDayObj?.label} ${activeDayObj?.date}?\n(ניתן לשחזר דרך הגדרות → משימות)`)) return;
+                  setHiddenMissionsByDay(prev => {
+                    const c = JSON.parse(JSON.stringify(prev));
+                    if (!c[activeDay]) c[activeDay] = [];
+                    if (!c[activeDay].includes(editId)) c[activeDay].push(editId);
+                    return c;
+                  });
+                  setMissionEditModal(null);
+                }} style={btn({background:"rgba(239,83,80,0.15)",color:"#ef5350",border:"1px solid #ef535044",padding:"10px",fontWeight:700,fontSize:13})}>🗑 הסתר ביום זה</button>
                 <button onClick={()=>setMissionEditModal(null)} style={btn({flex:1,padding:"10px",fontSize:14})}>ביטול</button>
               </div>
             </div>
