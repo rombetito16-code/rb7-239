@@ -2939,8 +2939,8 @@ function App() {
       if (s.deletedMissions) setDeletedMissions(s.deletedMissions);
       if (s.dayMissionOverrides) setDayMissionOverrides(s.dayMissionOverrides);
       if (s.availableRoles) setAvailableRoles(s.availableRoles);
-    if (s.tzelemItems) setTzelemItems(s.tzelemItems);
-    if (s.tzelemByDay) setTzelemByDay(s.tzelemByDay);
+      if (s.tzelemItems) setTzelemItems(s.tzelemItems);
+      if (s.tzelemByDay) setTzelemByDay(s.tzelemByDay);
       if (s.customPasswords) setCustomPasswords(s.customPasswords);
       if (s.customMissions) setCustomMissions(s.customMissions);
       if (s.paradeSettings) setParadeSettings(s.paradeSettings);
@@ -3020,6 +3020,7 @@ function App() {
           missionSettings, aftarSettings, reserveSettings, spontMissions,
           hiddenMissionsByDay, deletedMissions, dayMissionOverrides,
           availableRoles, customPasswords, customMissions, paradeSettings, globalRules,
+          tzelemItems, tzelemByDay,
           platoons: Object.fromEntries(Object.entries(platoons).map(([k,p])=>[k,p.members])),
         },
         // שמור את נתוני גוגל דרייב כדי שלא יימחקו בשמירה הבאה
@@ -3035,7 +3036,7 @@ function App() {
       }, 1500);
     }, 400);
     return () => clearTimeout(t);
-  }, [allAss, aftarByDay, missionSettings, aftarSettings, reserveSettings, spontMissions, hiddenMissionsByDay, deletedMissions, dayMissionOverrides, platoons, availableRoles, customPasswords, customMissions]);
+  }, [allAss, aftarByDay, missionSettings, aftarSettings, reserveSettings, spontMissions, hiddenMissionsByDay, deletedMissions, dayMissionOverrides, platoons, availableRoles, customPasswords, customMissions, tzelemItems, tzelemByDay]);
 
   const setAllAssAndSave = React.useCallback((valOrFn) => {
     setAllAss(prev => typeof valOrFn === 'function' ? valOrFn(prev) : valOrFn);
