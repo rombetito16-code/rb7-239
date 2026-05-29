@@ -2854,6 +2854,8 @@ function App() {
   const [deletedMissions, setDeletedMissions] = useState([]);
   const [dayMissionOverrides, setDayMissionOverrides] = useState({});
   const [availableRoles, setAvailableRoles] = useState(DEFAULT_ROLES);
+  const [tzelemItems, setTzelemItems] = useState([]);
+  const [tzelemByDay, setTzelemByDay] = useState({});
   const [customPasswords, setCustomPasswords] = useState(PASSWORDS);
   const [platoons, setPlatoons] = useState(() => JSON.parse(JSON.stringify(PLATOONS_DEFAULT)));
 
@@ -2899,24 +2901,23 @@ function App() {
       });
       setAllAss(base);
     }
-    // בדיקה אם יש נתוני גוגל דרייב חדשים מה-Apps Script
+    // בדיקה אם יש נתוני גוגל דרייב מה-Apps Script
     if (stored.__gdrive_aftar && stored.__gdrive_synced) {
       const gdriveAftar = stored.__gdrive_aftar;
-      // שמור את נתוני gdrive ב-window כדי שישמרו בחזרה ל-Firebase
+      // שמור ב-window
       window.__gdriveData = {
         __gdrive_aftar: stored.__gdrive_aftar,
         __gdrive_synced: stored.__gdrive_synced,
         __gdrive_count: stored.__gdrive_count,
         __gdrive_soldiers: stored.__gdrive_soldiers
       };
-      // גוגל דרייב הוא מקור האמת — מחליף הכל, לא ממזג
+      window.__gdriveSynced = stored.__gdrive_synced;
+      // גוגל דרייב = מקור האמת. מחליף הכל לגמרי.
       const base = freshAftar();
-      DAY_IDS.forEach(day => {
-        if (gdriveAftar[day]) base[day] = [...gdriveAftar[day]];
-        else if (stored.aftar && stored.aftar[day]) base[day] = [...stored.aftar[day]];
+      Object.entries(gdriveAftar).forEach(([day, names]) => {
+        if (Array.isArray(names)) base[day] = [...names];
       });
       setAftarByDay(base);
-      window.__gdriveSynced = stored.__gdrive_synced;
     } else if (stored.aftar) {
       // Use stored aftar as-is (source of truth after sync)
       const base = freshAftar();
@@ -2938,6 +2939,8 @@ function App() {
       if (s.deletedMissions) setDeletedMissions(s.deletedMissions);
       if (s.dayMissionOverrides) setDayMissionOverrides(s.dayMissionOverrides);
       if (s.availableRoles) setAvailableRoles(s.availableRoles);
+    if (s.tzelemItems) setTzelemItems(s.tzelemItems);
+    if (s.tzelemByDay) setTzelemByDay(s.tzelemByDay);
       if (s.customPasswords) setCustomPasswords(s.customPasswords);
       if (s.customMissions) setCustomMissions(s.customMissions);
       if (s.paradeSettings) setParadeSettings(s.paradeSettings);
@@ -2963,8 +2966,11 @@ function App() {
       setSyncStatus('connecting');
       // Listen to Firebase in real time
       unsubscribe = window.__firebase.listenToFirebase((data) => {
-        if (isSavingRef.current) return; // skip our own saves coming back
         if (data) {
+          // אם הגיעו נתוני gdrive חדשים — תמיד נחיל, גם בזמן שמירה
+          const hasNewGdrive = data.__gdrive_aftar && data.__gdrive_synced &&
+            data.__gdrive_synced !== window.__gdriveSynced;
+          if (isSavingRef.current && !hasNewGdrive) return; // skip our own saves coming back
           applyLoadedData(data);
           // Also update local backup
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
@@ -4603,6 +4609,7 @@ function App() {
             ))}
           </div>
         )}
+
       </div>
     );
   }
@@ -4735,6 +4742,176 @@ function App() {
     );
   }
 
+  // ═══ TZELEM VIEW ═══
+  function TzelemView() {
+    const dayObj = DAY_IDS.map(id => DAYS.find(d => d.id === id)).find(d => d && d.id === activeDay) || DAYS.find(d => d.id === activeDay);
+    const dateLabel = dayObj ? (dayObj.label + ' ' + dayObj.date) : activeDay;
+
+    const [editingItem, setEditingItem] = React.useState(null); // {id} or null for new
+    const [draft, setDraft] = React.useState({name:'', mastab:'', owner:''});
+    const [mefakadPicker, setMefakadPicker] = React.useState(null); // itemId being assigned
+
+    const dayStatuses = tzelemByDay[activeDay] || {};
+
+    const setStatus = (itemId, status) => {
+      setTzelemByDay(prev => {
+        const n = JSON.parse(JSON.stringify(prev));
+        if (!n[activeDay]) n[activeDay] = {};
+        n[activeDay][itemId] = status;
+        return n;
+      });
+    };
+
+    const saveItem = () => {
+      if (!draft.name.trim()) return;
+      if (editingItem && editingItem.id) {
+        setTzelemItems(prev => prev.map(it => it.id === editingItem.id ? {...it, ...draft} : it));
+      } else {
+        setTzelemItems(prev => [...prev, {id: Date.now().toString(), ...draft}]);
+      }
+      setEditingItem(null);
+      setDraft({name:'', mastab:'', owner:''});
+    };
+
+    const deleteItem = (id) => {
+      if (window.confirm('למחוק פריט זה?')) {
+        setTzelemItems(prev => prev.filter(it => it.id !== id));
+        setTzelemByDay(prev => {
+          const n = JSON.parse(JSON.stringify(prev));
+          Object.keys(n).forEach(day => { delete n[day][id]; });
+          return n;
+        });
+      }
+    };
+
+    const presentCount = tzelemItems.filter(it => dayStatuses[it.id]).length;
+    const total = tzelemItems.length;
+
+    return (
+      <div className="main" style={{maxWidth:700,margin:"0 auto",padding:"20px 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18}}>
+          <div style={{fontWeight:900,fontSize:18,flex:1}}>{'📷 דוח צל"ם'} — {dateLabel}</div>
+          <div style={{fontSize:12,color:presentCount===total&&total>0?"#34c77b":"var(--text3)",fontWeight:700}}>{presentCount}/{total} {'קיים'}</div>
+          <button onClick={()=>{setEditingItem({});setDraft({name:'',mastab:'',owner:''}); }}
+            style={{background:"var(--accent)22",border:"1px solid var(--accent)",borderRadius:7,color:"var(--accent)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"5px 12px"}}>+ {'הוסף צל"ם'}</button>
+        </div>
+
+        {editingItem !== null && (
+          <div style={{background:"var(--surface2)",border:"1.5px solid var(--border)",borderRadius:12,padding:14,marginBottom:16}}>
+            <div style={{fontWeight:700,fontSize:13,marginBottom:10}}>{editingItem.id ? 'עריכת פריט' : 'פריט חדש'}</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <input value={draft.name} onChange={e=>setDraft(p=>({...p,name:e.target.value}))}
+                placeholder={'שם הצל"ם'} dir="rtl"
+                style={{background:"var(--surface)",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:13,padding:"6px 10px"}}/>
+              <input value={draft.mastab} onChange={e=>setDraft(p=>({...p,mastab:e.target.value}))}
+                placeholder={'מס"ט"ב'} dir="rtl"
+                style={{background:"var(--surface)",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:13,padding:"6px 10px"}}/>
+              <input value={draft.owner} onChange={e=>setDraft(p=>({...p,owner:e.target.value}))}
+                placeholder={'של מי'} dir="rtl"
+                style={{background:"var(--surface)",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text)",fontFamily:"Heebo,sans-serif",fontSize:13,padding:"6px 10px"}}/>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={saveItem}
+                  style={{background:"var(--green)",border:"none",borderRadius:7,color:"#fff",cursor:"pointer",flex:1,fontFamily:"Heebo,sans-serif",fontSize:12,fontWeight:700,padding:"7px"}}>{'✓ שמור'}</button>
+                <button onClick={()=>{setEditingItem(null);setDraft({name:'',mastab:'',owner:''}); }}
+                  style={{background:"var(--surface)",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text2)",cursor:"pointer",flex:1,fontFamily:"Heebo,sans-serif",fontSize:12,padding:"7px"}}>{'ביטול'}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tzelemItems.length === 0 ? (
+          <div style={{textAlign:"center",color:"var(--text3)",padding:"60px 20px",fontSize:14}}>{'אין פריטים. לחץ + הוסף צל"ם'}</div>
+        ) : (
+          <div style={{display:"flex",flexDirection:"column",gap:0,border:"1.5px solid var(--border)",borderRadius:12,overflow:"hidden"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 100px 100px 200px 56px",background:"var(--surface2)",borderBottom:"1px solid var(--border)",padding:"8px 14px",gap:8}}>
+              <div style={{fontSize:11,fontWeight:800,color:"var(--text3)"}}>{'שם הצל"ם'}</div>
+              <div style={{fontSize:11,fontWeight:800,color:"var(--text3)",'textAlign':'center'}}>{'מס"ט"ב'}</div>
+              <div style={{fontSize:11,fontWeight:800,color:"var(--text3)",'textAlign':'center'}}>{'של מי'}</div>
+              <div style={{fontSize:11,fontWeight:800,color:"var(--text3)",'textAlign':'center'}}>{'סטטוס'}</div>
+              <div></div>
+            </div>
+            {tzelemItems.map((item, i) => {
+              const status = dayStatuses[item.id] || '';
+              return (
+                <div key={item.id} style={{display:"grid",gridTemplateColumns:"1fr 100px 100px 200px 56px",padding:"10px 14px",gap:8,alignItems:"center",borderBottom:i<tzelemItems.length-1?"1px solid var(--border)":"none",background:dayStatuses[item.id]?"#42a5f508":"transparent"}}>
+                  <div style={{fontWeight:700,fontSize:13,color:"var(--text)"}}>{item.name}</div>
+                  <div style={{fontSize:12,color:"var(--text2)",'textAlign':'center'}}>{item.mastab || '—'}</div>
+                  <div style={{fontSize:12,color:"var(--text2)",'textAlign':'center'}}>{item.owner || '—'}</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:3,justifyContent:"center"}}>
+                    {[
+                      {val:'ok',     label:'✓',    color:'#34c77b'},
+                      {val:'hamal',  label:'חמל',  color:'#42a5f5'},
+                      {val:'siyur',  label:'סיור', color:'#ff9800'},
+                      {val:'hafak',  label:'חפק',  color:'#ab47bc'},
+                      {val:'carmel', label:'כרמל', color:'#26c6da'},
+                    ].map(opt => {
+                      const isSel = dayStatuses[item.id] === opt.val;
+                      return <button key={opt.val} onClick={()=>setStatus(item.id, opt.val)}
+                        style={{background:isSel?opt.color:"var(--surface2)",border:"1px solid "+(isSel?opt.color:"var(--border2)"),borderRadius:6,color:isSel?"#fff":"var(--text3)",cursor:"pointer",fontSize:10,fontWeight:700,padding:"3px 6px"}}>{opt.label}</button>;
+                    })}
+                    {(() => {
+                      const cur = dayStatuses[item.id];
+                      const isMef = cur && cur.startsWith('mefakad:');
+                      const mefName = isMef ? cur.slice(8) : null;
+                      return <button onClick={()=>setMefakadPicker(item.id)}
+                        style={{background:isMef?"#ef9a9a":"var(--surface2)",border:"1px solid "+(isMef?"#ef9a9a":"var(--border2)"),borderRadius:6,color:isMef?"#fff":"var(--text3)",cursor:"pointer",fontSize:10,fontWeight:700,padding:"3px 6px",maxWidth:80,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        {isMef ? mefName : 'מפקד/מ"מ'}
+                      </button>;
+                    })()}
+                  </div>
+                  <div style={{display:"flex",gap:4,justifyContent:"center"}}>
+                    <button onClick={()=>{setEditingItem(item);setDraft({name:item.name,mastab:item.mastab||'',owner:item.owner||''}); }}
+                      style={{background:"none",border:"none",color:"var(--text3)",cursor:"pointer",fontSize:13,padding:"2px 4px"}}>✏️</button>
+                    <button onClick={()=>deleteItem(item.id)}
+                      style={{background:"none",border:"none",color:"#ef5350",cursor:"pointer",fontSize:13,padding:"2px 4px"}}>🗑</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── mefakad picker modal ── */}
+        {mefakadPicker !== null && (() => {
+          const cmdList = [];
+          Object.entries(platoons).forEach(([key, plat]) => {
+            (plat.members || []).forEach(rawM => {
+              const name = getMemberName(rawM);
+              const st = getMemberStatus(rawM);
+              if (st === 'absent') return;
+              const roles = getMemberRoles(rawM);
+              const isMef = roles && roles.some(r => r.includes('מ"מ') || r.includes('מפקד') || r.includes('מ״מ'));
+              const isCmd = key.startsWith('cmd');
+              if (isMef || isCmd) cmdList.push(name);
+            });
+          });
+          const unique = [...new Set(cmdList)];
+          return (
+            <div onClick={()=>setMefakadPicker(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+              <div onClick={e=>e.stopPropagation()} style={{background:"var(--surface)",border:"2px solid var(--border)",borderRadius:16,padding:20,maxWidth:380,width:"100%",maxHeight:"70vh",overflowY:"auto"}}>
+                <div style={{fontWeight:800,fontSize:15,marginBottom:14,textAlign:"center"}}>{'בחר מפקד / מ"מ'}</div>
+                {unique.length === 0 ? (
+                  <div style={{color:"var(--text3)",textAlign:"center",fontSize:13}}>{'לא נמצאו מפקדים/מ"מים'}</div>
+                ) : (
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {unique.map(name => (
+                      <button key={name} onClick={()=>{setStatus(mefakadPicker,'mefakad:'+name);setMefakadPicker(null);}}
+                        style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:9,color:"var(--text)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:13,fontWeight:700,padding:"10px 14px",textAlign:"right"}}>
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <button onClick={()=>setMefakadPicker(null)} style={{background:"none",border:"1px solid var(--border2)",borderRadius:8,color:"var(--text3)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:12,marginTop:14,padding:"6px 16px",width:"100%"}}>{'ביטול'}</button>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+    );
+  }
+
+
   // ═══ MEMBERS VIEW ═══
   function DochView() {
     const PLATOON_GROUPS = [
@@ -4742,7 +4919,6 @@ function App() {
       { keys:["cmd2","soldiers2"], label:"מחלקה 2" },
       { keys:["cmd3","soldiers3"], label:"מחלקה 3" },
       { keys:["pluga"],            label:"מסופחים" },
-      { keys:["pluga2"],           label:"מפקדת פלוגה" },
     ];
 
     const dayIdx   = DAY_IDS.indexOf(activeDay);
@@ -4985,6 +5161,72 @@ function App() {
             </div>
           );
         })}
+
+        {/* ── roles breakdown ── */}
+        {(() => {
+          const roleMap = {};
+          Object.values(platoons).forEach(plat => {
+            (plat.members || []).forEach(rawM => {
+              const name = getMemberName(rawM);
+              const st = getMemberStatus(rawM);
+              if (st === 'absent') return;
+              const roles = getMemberRoles(rawM);
+              if (!roles || roles.length === 0) return;
+              const isPresent = !homeToday.has(name) && st === 'active';
+              roles.forEach(role => {
+                if (!roleMap[role]) roleMap[role] = { present: [], away: [] };
+                if (isPresent) roleMap[role].present.push(name);
+                else roleMap[role].away.push(name);
+              });
+            });
+          });
+          const roleEntries = Object.entries(roleMap).sort((a,b) => b[1].present.length - a[1].present.length);
+          if (roleEntries.length === 0) return null;
+          const rolesText = 'פילוח תפקידים — ' + dateLabel + '\n' +
+            roleEntries.map(([role, {present, away}]) =>
+              role + ': ' + present.length + '/' + (present.length+away.length) + ' נוכחים' +
+              (present.length > 0 ? '\n  נוכחים: ' + present.join(', ') : '') +
+              (away.length > 0 ? '\n  לא נוכחים: ' + away.join(', ') : '')
+            ).join('\n\n');
+          return (
+            <div style={{background:"var(--surface)",border:"1.5px solid var(--border)",borderRadius:12,marginBottom:14,overflow:"hidden"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"var(--surface2)",borderBottom:"1px solid var(--border)"}}>
+                <div style={{fontWeight:900,fontSize:15,flex:1,color:"var(--text)"}}>{'\u{1F396}'} {'פילוח תפקידים'}</div>
+                <button onClick={()=>copyText('roles', rolesText)}
+                  style={{background:copied==='roles'?"#34c77b22":"var(--surface)",border:'1px solid '+(copied==='roles'?"#34c77b":"var(--border2)"),borderRadius:7,color:copied==='roles'?"#34c77b":"var(--text3)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"5px 12px",whiteSpace:"nowrap",marginRight:4}}>
+                  {copied==='roles' ? '\u2713 הועתק!' : '\u{1F4E4} העתק'}
+                </button>
+              </div>
+              <div style={{padding:"10px 14px 14px",display:"flex",flexDirection:"column",gap:12}}>
+                {roleEntries.map(([role, {present, away}]) => {
+                  const total = present.length + away.length;
+                  const pct = total > 0 ? Math.round(present.length / total * 100) : 0;
+                  return (
+                    <div key={role}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                        <span style={{fontWeight:800,fontSize:13,color:"var(--text)",minWidth:90}}>{role}</span>
+                        <span style={{fontSize:12,color:"#34c77b",fontWeight:700}}>{present.length} {'נוכחים'}</span>
+                        <span style={{fontSize:11,color:"var(--text3)"}}>/ {total} {'מליאה'}</span>
+                        <span style={{fontSize:11,color:"var(--text3)",marginRight:"auto"}}>{pct}%</span>
+                      </div>
+                      <div style={{background:"var(--surface2)",borderRadius:99,height:5,overflow:"hidden",marginBottom:6}}>
+                        <div style={{width:pct+'%',background:"#34c77b",height:"100%",borderRadius:99}}/>
+                      </div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                        {present.map(n => (
+                          <span key={n} style={{background:"#34c77b22",border:"1px solid #34c77b44",borderRadius:7,padding:"3px 9px",fontSize:11,fontWeight:700,color:"#34c77b"}}>{n}</span>
+                        ))}
+                        {away.map(n => (
+                          <span key={n} style={{background:"rgba(0,0,0,0.15)",border:"1px solid var(--border)",borderRadius:7,padding:"3px 9px",fontSize:11,color:"var(--text3)",opacity:.6}}>{n}</span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   }
@@ -5158,6 +5400,7 @@ function App() {
           <button className={`view-btn ${view==="tracking"?"active":""}`} onClick={()=>setView("tracking")}>⚖️ טבלת צדק</button>
           <button className={`view-btn ${view==="doch"?"active":""}`} onClick={()=>setView("doch")}>📋 דוח 1</button>
           <button className={`view-btn ${view==="members"?"active":""}`} onClick={()=>setView("members")}>👥 חיילים</button>
+          <button className={`view-btn ${view==="tzelem"?"active":""}`} onClick={()=>setView("tzelem")}>📷 דוח צל"ם</button>
           <button className={`view-btn ${view==="parade"?"active":""}`} onClick={()=>setView("parade")}>☀️ מסדר בוקר</button>
           <button className={`view-btn ${view==="settings"?"active":""}`} onClick={()=>setView("settings")}>⚙️ הגדרות</button>
           <button onClick={()=>setBypassConstraints(p=>!p)} style={{background:bypassConstraints?"#ef535033":"none",border:`1px solid ${bypassConstraints?"#ef5350":"var(--border2)"}`,borderRadius:7,color:bypassConstraints?"#ef5350":"var(--text3)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,padding:"4px 10px",whiteSpace:"nowrap"}}>
@@ -5370,37 +5613,35 @@ function App() {
           const a = document.createElement("a"); a.href=url; a.download="תבנית_ייבוא.csv"; a.click();
           URL.revokeObjectURL(url);
         }} title="הורד תבנית CSV ריקה" style={{background:"none",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text3)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,padding:"4px 10px"}}>📋 תבנית</button>
-        <button onClick={()=>{
-          // קודם נסה נתוני Apps Script מ-Firebase, אחרת נסה EXCEL_IMPORT_2026
-          const gd = window.__gdriveData;
-          const imp = window.EXCEL_IMPORT_2026;
-          const source = gd ? {aftar: gd.__gdrive_aftar, synced: gd.__gdrive_synced, soldiers: []} : imp;
-          if (!source || !source.aftar) { alert("נתוני גוגל דרייב לא נטענו עדיין.\nוודא ש-Apps Script רץ בהצלחה (testSync) ורענן את הדף."); return; }
-          const daysCount = Object.keys(source.aftar).length;
-          if (!window.confirm(
-            `סנכרון מגוגל דרייב (עודכן: ${source.synced||'—'})\n\n` +
-            `• ימי חופשה: ${daysCount}\n\n` +
-            `הסנכרון יעדכן יציאות לבית לפי שמות קיימים בתוכנה בלבד.\n\nלהמשיך?`
-          )) return;
-          const existingNamesForSync = new Set();
-          Object.values(platoons).forEach(plat => {
-            (plat.members||[]).forEach(m => {
-              if ((typeof m === 'string' ? 'active' : (m.status || 'active')) === 'active')
-                existingNamesForSync.add(typeof m === 'string' ? m : m.name);
+        <button onClick={async ()=>{
+          // משוך ישירות מ-Firebase כדי לקבל את הנתונים הכי עדכניים
+          const btn = event.target;
+          btn.disabled = true; btn.textContent = '⏳ טוען...';
+          try {
+            const resp = await fetch('https://rom-betito-56e9e-default-rtdb.firebaseio.com/shabzak_v2/__gdrive_aftar.json');
+            const syncedResp = await fetch('https://rom-betito-56e9e-default-rtdb.firebaseio.com/shabzak_v2/__gdrive_synced.json');
+            const gdriveAftar = await resp.json();
+            const synced = await syncedResp.json();
+            if (!gdriveAftar || typeof gdriveAftar !== 'object') {
+              alert('❌ אין נתוני גוגל דרייב ב-Firebase.\nוודא שהרצת testSync ב-Apps Script בהצלחה.');
+              return;
+            }
+            const daysCount = Object.keys(gdriveAftar).length;
+            if (!window.confirm(`סנכרון מגוגל דרייב\nעודכן: ${synced||'—'}\nימי יציאה: ${daysCount}\n\nהלוח יוחלף לגמרי. להמשיך?`)) return;
+            // החלף לגמרי — לא merge
+            const newAftar = {};
+            Object.entries(gdriveAftar).forEach(([day, names]) => {
+              newAftar[day] = Array.isArray(names) ? names : [];
             });
-          });
-          setAftarByDayAndSave(prev => {
-            // מתחיל מאפס — מאפס את כל הימים ואז כותב מחדש רק מהגיליון
-            const c = {};
-            // שמור ימים שנוצרו ידנית ואינם בגיליון כרשימה ריקה
-            Object.keys(prev).forEach(dayId => { c[dayId] = []; });
-            // כתוב מחדש רק מהגיליון, מסנן שמות שלא קיימים בתוכנה
-            Object.entries(source.aftar).forEach(([dayId, names]) => {
-              c[dayId] = (names||[]).filter(n => existingNamesForSync.has(n));
-            });
-            return c;
-          });
-          alert(`✅ סנכרון הושלם!\n• חופשות: ${daysCount} ימים\nהלוח עודכן לפי הגיליון.`);
+            setAftarByDayAndSave(() => newAftar);
+            window.__gdriveSynced = synced;
+            window.__gdriveData = { __gdrive_aftar: gdriveAftar, __gdrive_synced: synced };
+            alert(`✅ סנכרון הושלם! ${daysCount} ימים עודכנו.`);
+          } catch(e) {
+            alert('שגיאה: ' + e.message);
+          } finally {
+            btn.disabled = false; btn.textContent = '📥 סנכרן מגוגל דרייב';
+          }
         }} style={{background:"linear-gradient(135deg,#ffd54f22,#ff980022)",border:"1.5px solid #ffd54f88",borderRadius:7,color:"#ffd54f",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"4px 12px"}}>📥 סנכרן מגוגל דרייב</button>
         <span title={`סנכרון אוטומטי Apps Script · סונכרן: ${window.__gdriveSynced||window.EXCEL_IMPORT_2026?.synced||'טרם סונכרן'}`} style={{background:window.__gdriveSynced?"rgba(52,199,123,0.12)":"rgba(79,156,249,0.1)",border:`1px solid ${window.__gdriveSynced?"rgba(52,199,123,0.4)":"rgba(79,156,249,0.3)"}`,borderRadius:7,color:window.__gdriveSynced?"var(--green)":"var(--text3)",fontFamily:"Heebo,sans-serif",fontSize:10,padding:"4px 8px",cursor:"help"}}>{window.__gdriveSynced?"🟢":"☁️"} גוגל דרייב · {window.__gdriveSynced||window.EXCEL_IMPORT_2026?.synced||'—'}</span>
         <button onClick={()=>{
@@ -5417,6 +5658,7 @@ function App() {
        view==="tracking" ? <TrackingView/> :
        view==="doch"    ? <DochView/> :
        view==="members" ? <MembersView/> :
+       view==="tzelem" ? <TzelemView/> :
        view==="parade" ? <ParadeView/> :
        <BuilderView/>}
       {restConfirm && (
@@ -5864,8 +6106,17 @@ function MemberEditor({ name, roles, blockedMissions, personalNumber, phone, sta
         <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
           {availableRoles.map(r=>{
             const isSel = editRoles.includes(r);
-            return <button key={r} onClick={()=>setEditRoles(p=>isSel?p.filter(x=>x!==r):[...p,r])}
-              style={{...btn(),background:isSel?"var(--accent)":"var(--surface2)",color:isSel?"#fff":"var(--text2)",fontSize:10,padding:"2px 6px"}}>{r}</button>;
+            return (
+              <div key={r} style={{display:"flex",alignItems:"center",gap:0,borderRadius:6,overflow:"hidden",border:'1px solid '+(isSel?"var(--accent)":"var(--border2)")}}>
+                <button onClick={()=>setEditRoles(p=>isSel?p.filter(x=>x!==r):[...p,r])}
+                  style={{...btn(),background:isSel?"var(--accent)":"var(--surface2)",color:isSel?"#fff":"var(--text2)",fontSize:10,padding:"2px 6px",border:"none",borderRadius:0}}>{r}</button>
+                {setAvailableRoles && <button onClick={()=>{if(window.confirm('למחוק את התפקיד "'+r+'"?')){
+                  setAvailableRoles(p=>p.filter(x=>x!==r));
+                  setEditRoles(p=>p.filter(x=>x!==r));
+                  setPlatoons(prev=>{const n=JSON.parse(JSON.stringify(prev));Object.values(n).forEach(pl=>{pl.members=(pl.members||[]).map(m=>{if(typeof m==='string')return m;return{...m,roles:(m.roles||[]).filter(x=>x!==r)};});});return n;});
+                }}} style={{background:"#ef535022",border:"none",color:"#ef5350",cursor:"pointer",fontSize:9,padding:"2px 5px",lineHeight:1}}>&#x2715;</button>}
+              </div>
+            );
           })}
         </div>
       </div>
