@@ -2896,6 +2896,13 @@ function App() {
     // בדיקה אם יש נתוני גוגל דרייב חדשים מה-Apps Script
     if (stored.__gdrive_aftar && stored.__gdrive_synced) {
       const gdriveAftar = stored.__gdrive_aftar;
+      // שמור את נתוני gdrive ב-window כדי שישמרו בחזרה ל-Firebase
+      window.__gdriveData = {
+        __gdrive_aftar: stored.__gdrive_aftar,
+        __gdrive_synced: stored.__gdrive_synced,
+        __gdrive_count: stored.__gdrive_count,
+        __gdrive_soldiers: stored.__gdrive_soldiers
+      };
       const base = freshAftar();
       if (stored.aftar) {
         DAY_IDS.forEach(day => { if (stored.aftar[day]) base[day] = [...stored.aftar[day]]; });
@@ -3001,7 +3008,9 @@ function App() {
           hiddenMissionsByDay, deletedMissions, dayMissionOverrides,
           availableRoles, customPasswords, customMissions, paradeSettings, globalRules,
           platoons: Object.fromEntries(Object.entries(platoons).map(([k,p])=>[k,p.members])),
-        }
+        },
+        // שמור את נתוני גוגל דרייב כדי שלא יימחקו בשמירה הבאה
+        ...(window.__gdriveData || {})
       };
       isSavingRef.current = true;
       setSyncStatus('saving');
