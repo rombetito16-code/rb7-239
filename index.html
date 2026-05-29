@@ -5370,36 +5370,17 @@ function App() {
           URL.revokeObjectURL(url);
         }} title="הורד תבנית CSV ריקה" style={{background:"none",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text3)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,padding:"4px 10px"}}>📋 תבנית</button>
         <button onClick={()=>{
+          // קודם נסה נתוני Apps Script מ-Firebase, אחרת נסה EXCEL_IMPORT_2026
+          const gd = window.__gdriveData;
           const imp = window.EXCEL_IMPORT_2026;
-          if (!imp) { alert("נתוני הייבוא לא נטענו"); return; }
-          // Build lookup of soldiers from Excel: name → {platoon, personalNumber, roles, net}
-          const impByName = {};
-          imp.soldiers.forEach(s => { impByName[s.name] = s; });
-          let updated = 0;
-          const fmtId = id => id ? id.replace(/(\d{4})_(\d{2})_(\d{2})/,'$3/$2/$1') : '';
-          const rangeStr = imp.dateRange ? `${fmtId(imp.dateRange.first)} – ${fmtId(imp.dateRange.last)}` : '';
+          const source = gd ? {aftar: gd.__gdrive_aftar, synced: gd.__gdrive_synced, soldiers: []} : imp;
+          if (!source || !source.aftar) { alert("נתוני גוגל דרייב לא נטענו עדיין.\nוודא ש-Apps Script רץ בהצלחה (testSync) ורענן את הדף."); return; }
+          const daysCount = Object.keys(source.aftar).length;
           if (!window.confirm(
-            `סנכרון מגוגל דרייב (עודכן: ${imp.synced})\n\n` +
-            `• ימי חופשה: ${Object.keys(imp.aftar).length} (${rangeStr})\n\n` +
-            `הסנכרון יעדכן יציאות לבית לפי שמות קיימים בתוכנה בלבד. שמות לא יתווספו או יימחקו.\n\nלהמשיך?`
+            `סנכרון מגוגל דרייב (עודכן: ${source.synced||'—'})\n\n` +
+            `• ימי חופשה: ${daysCount}\n\n` +
+            `הסנכרון יעדכן יציאות לבית לפי שמות קיימים בתוכנה בלבד.\n\nלהמשיך?`
           )) return;
-          // Update personalNumber for existing soldiers only
-          setPlatoons(prev => {
-            const n = JSON.parse(JSON.stringify(prev));
-            Object.values(n).forEach(plat => {
-              plat.members = plat.members.map(m => {
-                const name = typeof m === 'string' ? m : m.name;
-                const src = impByName[name];
-                if (!src) return m;
-                const cur = typeof m === 'string' ? { name: m, roles: [], blockedMissions: [], personalNumber: '', phone: '', status: 'active' } : { ...m };
-                if (src.personalNumber && cur.personalNumber !== src.personalNumber) { cur.personalNumber = src.personalNumber; updated++; }
-                return cur;
-              });
-            });
-            return n;
-          });
-          // Sync aftar: only include names of active soldiers in the app
-          // Collect active names BEFORE calling setState (avoids stale closure over platoons)
           const existingNamesForSync = new Set();
           Object.values(platoons).forEach(plat => {
             (plat.members||[]).forEach(m => {
@@ -5408,17 +5389,23 @@ function App() {
             });
           });
           setAftarByDayAndSave(prev => {
-            const existingNames = existingNamesForSync;
             const c = JSON.parse(JSON.stringify(prev));
-            Object.keys(imp.aftar).forEach(dayId => { c[dayId] = []; });
-            Object.entries(imp.aftar).forEach(([dayId, names]) => {
-              c[dayId] = names.filter(n => existingNames.has(n));
+            Object.keys(source.aftar).forEach(dayId => { c[dayId] = []; });
+            Object.entries(source.aftar).forEach(([dayId, names]) => {
+              c[dayId] = (names||[]).filter(n => existingNamesForSync.has(n));
             });
             return c;
           });
-          alert(`✅ סנכרון הושלם!\n• עודכנו מספרים אישיים: ${updated}\n• חופשות: ${Object.keys(imp.aftar).length} ימים`);
+          alert(`✅ סנכרון הושלם!\n• חופשות: ${daysCount} ימים`);
         }} style={{background:"linear-gradient(135deg,#ffd54f22,#ff980022)",border:"1.5px solid #ffd54f88",borderRadius:7,color:"#ffd54f",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"4px 12px"}}>📥 סנכרן מגוגל דרייב</button>
         <span title={`סנכרון אוטומטי Apps Script · סונכרן: ${window.__gdriveSynced||window.EXCEL_IMPORT_2026?.synced||'טרם סונכרן'}`} style={{background:window.__gdriveSynced?"rgba(52,199,123,0.12)":"rgba(79,156,249,0.1)",border:`1px solid ${window.__gdriveSynced?"rgba(52,199,123,0.4)":"rgba(79,156,249,0.3)"}`,borderRadius:7,color:window.__gdriveSynced?"var(--green)":"var(--text3)",fontFamily:"Heebo,sans-serif",fontSize:10,padding:"4px 8px",cursor:"help"}}>{window.__gdriveSynced?"🟢":"☁️"} גוגל דרייב · {window.__gdriveSynced||window.EXCEL_IMPORT_2026?.synced||'—'}</span>
+        <button onClick={()=>{
+          const gd = window.__gdriveData;
+          if (!gd) { alert("❌ אין נתוני Apps Script ב-Firebase.\n\nצעדים לתיקון:\n1. פתח Apps Script בגיליון\n2. הרץ testSync\n3. בדוק שב-Logs רואים ✅\n4. רענן את הדף"); return; }
+          const days = Object.keys(gd.__gdrive_aftar||{}).length;
+          const sample = Object.entries(gd.__gdrive_aftar||{}).slice(0,3).map(([d,n])=>`${d}: ${n.length} חיילים`).join('\n');
+          alert(`✅ נתוני Apps Script קיימים ב-Firebase:\n• סונכרן: ${gd.__gdrive_synced}\n• ימים: ${days}\n• דוגמה:\n${sample}\n\nלחץ "סנכרן מגוגל דרייב" כדי להחיל.`);
+        }} style={{background:"none",border:"1px solid var(--border2)",borderRadius:7,color:"var(--text3)",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:10,padding:"3px 8px"}}>🔍 בדוק</button>
       </div>
       {view==="display" ? <DisplayView/> :
        view==="settings" ? <SettingsView/> :
