@@ -2909,11 +2909,12 @@ function App() {
         __gdrive_count: stored.__gdrive_count,
         __gdrive_soldiers: stored.__gdrive_soldiers
       };
+      // גוגל דרייב הוא מקור האמת — מחליף הכל, לא ממזג
       const base = freshAftar();
-      if (stored.aftar) {
-        DAY_IDS.forEach(day => { if (stored.aftar[day]) base[day] = [...stored.aftar[day]]; });
-      }
-      DAY_IDS.forEach(day => { if (gdriveAftar[day]) base[day] = [...gdriveAftar[day]]; });
+      DAY_IDS.forEach(day => {
+        if (gdriveAftar[day]) base[day] = [...gdriveAftar[day]];
+        else if (stored.aftar && stored.aftar[day]) base[day] = [...stored.aftar[day]];
+      });
       setAftarByDay(base);
       window.__gdriveSynced = stored.__gdrive_synced;
     } else if (stored.aftar) {
@@ -5389,14 +5390,17 @@ function App() {
             });
           });
           setAftarByDayAndSave(prev => {
-            const c = JSON.parse(JSON.stringify(prev));
-            Object.keys(source.aftar).forEach(dayId => { c[dayId] = []; });
+            // מתחיל מאפס — מאפס את כל הימים ואז כותב מחדש רק מהגיליון
+            const c = {};
+            // שמור ימים שנוצרו ידנית ואינם בגיליון כרשימה ריקה
+            Object.keys(prev).forEach(dayId => { c[dayId] = []; });
+            // כתוב מחדש רק מהגיליון, מסנן שמות שלא קיימים בתוכנה
             Object.entries(source.aftar).forEach(([dayId, names]) => {
               c[dayId] = (names||[]).filter(n => existingNamesForSync.has(n));
             });
             return c;
           });
-          alert(`✅ סנכרון הושלם!\n• חופשות: ${daysCount} ימים`);
+          alert(`✅ סנכרון הושלם!\n• חופשות: ${daysCount} ימים\nהלוח עודכן לפי הגיליון.`);
         }} style={{background:"linear-gradient(135deg,#ffd54f22,#ff980022)",border:"1.5px solid #ffd54f88",borderRadius:7,color:"#ffd54f",cursor:"pointer",fontFamily:"Heebo,sans-serif",fontSize:11,fontWeight:700,padding:"4px 12px"}}>📥 סנכרן מגוגל דרייב</button>
         <span title={`סנכרון אוטומטי Apps Script · סונכרן: ${window.__gdriveSynced||window.EXCEL_IMPORT_2026?.synced||'טרם סונכרן'}`} style={{background:window.__gdriveSynced?"rgba(52,199,123,0.12)":"rgba(79,156,249,0.1)",border:`1px solid ${window.__gdriveSynced?"rgba(52,199,123,0.4)":"rgba(79,156,249,0.3)"}`,borderRadius:7,color:window.__gdriveSynced?"var(--green)":"var(--text3)",fontFamily:"Heebo,sans-serif",fontSize:10,padding:"4px 8px",cursor:"help"}}>{window.__gdriveSynced?"🟢":"☁️"} גוגל דרייב · {window.__gdriveSynced||window.EXCEL_IMPORT_2026?.synced||'—'}</span>
         <button onClick={()=>{
