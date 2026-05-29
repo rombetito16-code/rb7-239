@@ -2572,12 +2572,18 @@ function loadFromStorage() {
 function saveToLocalStorage(data) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) { console.error('שמירה מקומית נכשלה:', e); }
 }
+function sanitizeForFirebase(obj) {
+  if (obj === undefined) return null;
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(v => sanitizeForFirebase(v === undefined ? null : v));
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) { out[k] = sanitizeForFirebase(v === undefined ? null : v); }
+  return out;
+}
 function saveToStorage(data) {
-  // Always save locally as backup
   saveToLocalStorage(data);
-  // Also save to Firebase if available
   if (window.__firebase) {
-    window.__firebase.saveToFirebase(data).catch(e => console.error('Firebase save error:', e));
+    window.__firebase.saveToFirebase(sanitizeForFirebase(data)).catch(e => console.error('Firebase save error:', e));
   }
 }
 
